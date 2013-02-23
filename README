@@ -1,9 +1,0 @@
-
-all mesh file names, imaging parameters, and affine transformation parameters should be in the ini file
-
-and example ini file is given in dog1.ini:
- adjust work_dir, mesh_filenames, etc accordingly
-
-
-to run:
- python convertExodusToMatlab.py --ini_file=dog1.ini
