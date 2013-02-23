@@ -62,19 +62,26 @@ for uid in seriesUID:
    # parse header SeriesDescription for t1 t2 flair
    WriteThisUID = False
    SeriesDescription = dictionary['0008|103e']
+   StudyDate         = dictionary['0008|0020']
+   SeriesDate        = dictionary['0008|0021']
+   AcquisitionDate   = dictionary['0008|0022']
+   ContentDate       = dictionary['0008|0023']
+   StudyTime         = dictionary['0008|0030']
    for searchheader in ['T1','T2','FLAIR']:
     if(SeriesDescription.upper().find(searchheader) != -1):
       WriteThisUID = True
       print "writing:", SeriesDescription
    # write
    if(WriteThisUID):
+     # tag file name with dicom header info to id
+     filename = "%d_%d_%s" %(StudyDate,StudyTime,SeriesDescription.replace(' ',''))
+     # instantiate writer
      writer = itk.ImageFileWriter[ImageType].New()
      writer.SetInput( reader.GetOutput() )
      #TODO set vtk array name to the series description for ID
      #vtkvectorarray.SetName(SeriesDescription)
-     writer.SetFileName( "%s.mha" % uid );
+     writer.SetFileName( "%s.mha" % filename );
      writer.Update() 
-     #save as MATLAB :)
-     scipyio.savemat("%s.mat" % (uid), {'HeaderInfo':dictionary.GetKeys()} )
      #TODO get pixel buffer and save as MATLAB :)
-     #scipyio.savemat("%s.mat" % (uid), {'ImageData':Data,'HeaderInfo':dictionary} )
+     #scipyio.savemat("%s.mat" % (filename), {'ImageData':Data,'HeaderInfo':dictionary} )
+     scipyio.savemat("%s.mat" % (filename), {'HeaderInfo':dictionary.GetKeys()} )
