@@ -38,6 +38,7 @@ ImageType  = itk.Image.SS3
 
 nameGenerator = itk.GDCMSeriesFileNames.New()
 nameGenerator.SetUseSeriesDetails( True ) 
+nameGenerator.RecursiveOn() 
 nameGenerator.AddSeriesRestriction("0008|0021") 
 
 nameGenerator.SetDirectory( sys.argv[1]) 
