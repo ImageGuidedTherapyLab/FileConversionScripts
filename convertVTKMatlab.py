@@ -45,7 +45,7 @@ def ConvertVTKMatlab(input_filename,output_filename):
   image_point_data = imageDataVTK.GetPointData() 
   image_data       = vtkNumPy.vtk_to_numpy( image_point_data.GetArray(0) ) 
   # write numpy to disk in matlab
-  scipyio.savemat( output_filename, {'dimensions':dimensions,'spacing':spacing, 'origin':origin,'image':image_data})
+  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,image_data.reshape(dimensions,order='F')})
 
   
 # setup command line parser to control execution
