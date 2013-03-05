@@ -24,13 +24,42 @@ import os
 import sys
 # python itk bindings
 import itk
+# python vtk bindings
+import vtk
+import vtk.util.numpy_support as vtkNumPy 
+import numpy
 # used scipy to write matlab files
 import scipy.io as scipyio
+
+####################################################################
+def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
+  extension = input_filename.split('.').pop()
+  vtkReader = None
+  if extension == 'vtk':
+    vtkReader = vtk.vtkDataSetReader() 
+  elif extension == 'vti':
+    vtkReader = vtk.vtkXMLImageDataReader() 
+  else:
+    raise RuntimeError('unknown file type %s ' % input_filename)
+  vtkReader.SetFileName( "%s" % (input_filename) ) 
+  vtkReader.Update()
+  imageDataVTK = vtkReader.GetOutput()
+  dimensions = imageDataVTK.GetDimensions()
+  spacing = imageDataVTK.GetSpacing()
+  origin  = imageDataVTK.GetOrigin()
+  print spacing, origin, dimensions
+  #fem.SetImagingDimensions( dimensions ,origin,spacing) 
+
+  image_point_data = imageDataVTK.GetPointData() 
+  image_data       = vtkNumPy.vtk_to_numpy( image_point_data.GetArray(0) ) 
+  # write numpy to disk in matlab
+  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,'image':image_data.reshape(dimensions,order='F'),'HeaderInfo':headerinfo})
+
+####################################################################
 
 if len(sys.argv) < 1:
     print('Usage: ' + sys.argv[0] + ' DicomDirectory')
     sys.exit(1)
-
 #
 # Reads a 3D image in with signed short (16bits/pixel) pixel type
 # and save it
@@ -93,7 +122,7 @@ for dirname, dirnames, filenames in os.walk(sys.argv[1]):
                ## 'Specialcharactersspaces888323'
 
                # tag file name with dicom header info to id
-               outfilename = "%s_%s_%s_%s" %(PathToSubDir,StudyDate,StudyTime,\
+               outfilename = "%s_%s_%s_%s" %(PathToSubDir,StudyDate,StudyTime.replace(' ',''),\
                       ''.join(e for e in SeriesDescription if e.isalnum())
                                       )
                print "writing:", outfilename
@@ -102,11 +131,10 @@ for dirname, dirnames, filenames in os.walk(sys.argv[1]):
                writer.SetInput( reader.GetOutput() )
                #TODO set vtk array name to the series description for ID
                #vtkvectorarray.SetName(SeriesDescription)
-               writer.SetFileName( "%s.mha" % outfilename );
+               writer.SetFileName( "%s.vtk" % outfilename );
                writer.Update() 
-               #TODO get pixel buffer and save as MATLAB :)
-               #scipyio.savemat("%s.mat" % (outfilename), {'ImageData':Data,'HeaderInfo':dictionary} )
-               scipyio.savemat("%s.mat" % (outfilename), {'HeaderInfo':dictionary.GetKeys()} )
+               #get pixel buffer and save as MATLAB :)
+               ConvertVTKMatlab( "%s.vtk" % (outfilename),"%s.mat" % (outfilename),dictionary.GetKeys() )
            except Exception as inst:
              print "error reading: ", uid 
              print inst
