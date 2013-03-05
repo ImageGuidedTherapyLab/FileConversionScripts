@@ -53,7 +53,109 @@ def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
   image_point_data = imageDataVTK.GetPointData() 
   image_data       = vtkNumPy.vtk_to_numpy( image_point_data.GetArray(0) ) 
   # write numpy to disk in matlab
-  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,'image':image_data.reshape(dimensions,order='F'),'HeaderInfo':headerinfo})
+  # notice the row/column major orientation
+  # SCRGP2$ python
+  # Enthought Python Distribution -- www.enthought.com
+  # Version: 7.3-1 (64-bit)
+  # 
+  # Python 2.7.3 |EPD 7.3-1 (64-bit)| (default, Apr 11 2012, 17:52:16)
+  # [GCC 4.1.2 20080704 (Red Hat 4.1.2-44)] on linux2
+  # Type "credits", "demo" or "enthought" for more information.
+  # >>> import numpy
+  # >>> import scipy.io as scipyio
+  # >>> numpytest = numpy.arange(30).reshape(2,3,5)
+  # >>> numpytest
+  # array([[[ 0,  1,  2,  3,  4],
+  #         [ 5,  6,  7,  8,  9],
+  #         [10, 11, 12, 13, 14]],
+  # 
+  #        [[15, 16, 17, 18, 19],
+  #         [20, 21, 22, 23, 24],
+  #         [25, 26, 27, 28, 29]]])
+  # >>> scipyio.savemat( 'test.mat', {'numpytest':numpytest})
+  # /opt/apps/EPD/epd-7.3-1-rh5-x86_64/lib/python2.7/site-packages/scipy/io/matlab/mio.py:266: FutureWarning: Using oned_as default value ('column') This will change to 'row' in future versions
+  #   oned_as=oned_as)
+  #SCRGP2$ matlab -nodesktop
+  #Warning: No display specified.  You will not be able to display graphics on the screen.
+  #Warning: No window system found.  Java option 'MWT' ignored
+  #
+  #                                                                                                                            < M A T L A B (R) >
+  #                                                                                                                  Copyright 1984-2010 The MathWorks, Inc.
+  #                                                                                                               Version 7.12.0.635 (R2011a) 64-bit (glnxa64)
+  #                                                                                                                              March 18, 2011
+  #
+  #
+  #  To get started, type one of these: helpwin, helpdesk, or demo.
+  #  For product information, visit www.mathworks.com.
+  #
+  #>> load test.mat
+  #>> numpytest
+  #
+  #numpytest(:,:,1) =
+  #
+  #                    0                    5                   10
+  #                   15                   20                   25
+  #
+  #
+  #numpytest(:,:,2) =
+  #
+  #                    1                    6                   11
+  #                   16                   21                   26
+  #
+  #
+  #numpytest(:,:,3) =
+  #
+  #                    2                    7                   12
+  #                   17                   22                   27
+  #
+  #
+  #numpytest(:,:,4) =
+  #
+  #                    3                    8                   13
+  #                   18                   23                   28
+  #
+  #
+  #numpytest(:,:,5) =
+  #
+  #                    4                    9                   14
+  #                   19                   24                   29
+  #>> numpytest(:)
+  #
+  #ans =
+  #
+  #                    0
+  #                   15
+  #                    5
+  #                   20
+  #                   10
+  #                   25
+  #                    1
+  #                   16
+  #                    6
+  #                   21
+  #                   11
+  #                   26
+  #                    2
+  #                   17
+  #                    7
+  #                   22
+  #                   12
+  #                   27
+  #                    3
+  #                   18
+  #                    8
+  #                   23
+  #                   13
+  #                   28
+  #                    4
+  #                   19
+  #                    9
+  #                   24
+  #                   14
+  #                   29
+  #save matlab file
+  #  indexing is painful.... reshape to dimensions and transpose 2d dimensions only
+  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,'image':image_data.reshape(dimensions,order='F').transpose(1,0,2),'HeaderInfo':headerinfo})
 
 ####################################################################
 
