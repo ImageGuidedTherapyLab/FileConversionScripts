@@ -34,6 +34,9 @@ import numpy
 # used scipy to write matlab files
 import scipy.io as scipyio
 
+# define image type
+ImageType  = itk.Image.SS3
+
 ####################################################################
 def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
   extension = input_filename.split('.').pop()
@@ -164,7 +167,6 @@ def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
 
 def ParseDicomDirectoryAndWrite(DicomDirectory):
    print "working on: ",DicomDirectory  
-   ImageType  = itk.Image.SS3
    nameGenerator = itk.GDCMSeriesFileNames.New()
    nameGenerator.SetUseSeriesDetails( True ) 
    # os.walk will recursively look through directories
@@ -192,15 +194,20 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
             print key, dictionary[key]
         # parse header SeriesDescription for t1 t2 flair
         WriteThisUID = False
+        StudyDescription  = dictionary['0008|1030']
         SeriesDescription = dictionary['0008|103e']
         StudyDate         = dictionary['0008|0020']
         SeriesDate        = dictionary['0008|0021']
         AcquisitionDate   = dictionary['0008|0022']
         ContentDate       = dictionary['0008|0023']
         StudyTime         = dictionary['0008|0030']
-        for searchheader in ['T1','T2','FLAIR']:
-         if(SeriesDescription.upper().find(searchheader) != -1):
-           WriteThisUID = True
+        Modality          = dictionary['0008|0060']
+
+        WriteThisUID = True
+        # TODO: do we need to filter on anything ? 
+        ## for searchheader in ['T1','T2','FLAIR']:
+        ##  if(SeriesDescription.upper().find(searchheader) != -1):
+        ##    WriteThisUID = True
         # write
         if(WriteThisUID):
           ## str.isalnum is used to remove special characters:
@@ -216,9 +223,10 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           ## 'Specialcharactersspaces888323'
 
           # tag file name with dicom header info to id
-          outfilename = "%s_%s_%s_%s" %(DicomDirectory,StudyDate,StudyTime.replace(' ',''),\
-                 ''.join(e for e in SeriesDescription if e.isalnum())
-                                 )
+          outfilename = "%s_%s_%s_%s_%s_%s" %(DicomDirectory,StudyDate,StudyTime.replace(' ',''),\
+                 ''.join(e for e in SeriesDescription if e.isalnum()),\
+                 ''.join(e for e in StudyDescription  if e.isalnum()),\
+                                    Modality )
           print "writing:", outfilename
           # instantiate writer
           writer = itk.ImageFileWriter[ImageType].New()
