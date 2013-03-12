@@ -22,6 +22,7 @@
 
 import os
 import sys
+import subprocess
 # python itk bindings
 import itk
 # python vtk bindings
@@ -159,19 +160,28 @@ def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
 
 ####################################################################
 
-if len(sys.argv) < 1:
-    print('Usage: ' + sys.argv[0] + ' DicomDirectory')
-    sys.exit(1)
+## if len(sys.argv) < 1:
+##     print('Usage: ' + sys.argv[0] + ' DicomDirectory')
+##     sys.exit(1)
 #
 # Reads a 3D image in with signed short (16bits/pixel) pixel type
 # and save it
 #
 ImageType  = itk.Image.SS3
 
-for dirname, dirnames, filenames in os.walk(sys.argv[1]):
-    # print path to all subdirectories first.
-    for subdirname in dirnames:
-        PathToSubDir = os.path.join(dirname, subdirname)
+AETitle = 'INNOVADOR'
+portnumber = 11112
+listenerCMD = "/opt/apps/SLICER/Slicer-4.1.1-linux-amd64/bin/storescp -xs -fe .dcm -sp  -aet %s --output-directory /home/fuentes/SlicerDicom/ --exec-on-reception 'echo #f 1>&2' --exec-on-eostudy 'echo  #p' --eostudy-timeout 5 %d" % (AETitle,portnumber) 
+print "starting..."
+print listenerCMD 
+listenerProcess = subprocess.Popen(listenerCMD,shell=True,stdout=subprocess.PIPE )
+while ( listenerProcess.poll() == None ):
+## for dirname, dirnames, filenames in os.walk(sys.argv[1]):
+##     # print path to all subdirectories first.
+##     for subdirname in dirnames:
+##         PathToSubDir = os.path.join(dirname, subdirname)
+##         
+        PathToSubDir = listenerProcess.stdout.readline().strip('\n')
         print "working on: ",PathToSubDir  
         nameGenerator = itk.GDCMSeriesFileNames.New()
         nameGenerator.SetUseSeriesDetails( True ) 
