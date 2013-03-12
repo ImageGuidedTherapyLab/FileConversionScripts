@@ -260,12 +260,14 @@ if (options.dicom_dir):
 elif (options.server):
   # configure server
   config = ConfigParser.ConfigParser()
+  config.read(options.server) 
   storescpEXE = config.get('dcmtk','storescp')
   AETitle     = config.get('dcmtk','aetitle')
   outputdir   = config.get('dcmtk','outputdir')
   portnumber  = config.getint('dcmtk','port')
+  timeout     = config.getint('dcmtk','tos')
   # build server command
-  listenerCMD = "%s -xs -fe .dcm -sp  -aet %s --output-directory %s  --exec-on-reception 'echo #f 1>&2' --exec-on-eostudy 'echo  #p' --eostudy-timeout 5 %d" % (storescpEXE,AETitle,outputdir,portnumber) 
+  listenerCMD = "%s -xs -fe .dcm -sp  -aet %s --output-directory %s  --exec-on-reception 'echo #f 1>&2' --exec-on-eostudy 'echo  #p' --eostudy-timeout %d %d" % (storescpEXE,AETitle,outputdir,timeout,portnumber) 
   print "starting..."
   print listenerCMD 
   # setup server
