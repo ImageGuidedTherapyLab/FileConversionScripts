@@ -4,6 +4,9 @@ all mesh file names, imaging parameters, and affine transformation parameters sh
 and example ini file is given in dog1.ini:
  adjust work_dir, mesh_filenames, etc accordingly
 
+storescp obtained from Slicer4
+
+ http://support.dcmtk.org/docs/storescp.html
 
 to run:
  python convertExodusToMatlab.py --ini_file=dog1.ini
