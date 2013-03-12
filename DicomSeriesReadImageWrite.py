@@ -188,20 +188,42 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
         reader.Update( )
         # get dictionary info
         dictionary = dicomIO.GetMetaDataDictionary()
-        PrintAllKeysInDictionary = False
-        if(PrintAllKeysInDictionary): 
-          for key in dictionary.GetKeys():
-            print key, dictionary[key]
+        # FIXME: Dicom Dictionary not properly imported into matlab this way
+        DicomDictionary = [ (key, dictionary[key]) for key in dictionary.GetKeys() ]
         # parse header SeriesDescription for t1 t2 flair
         WriteThisUID = False
-        StudyDescription  = dictionary['0008|1030']
-        SeriesDescription = dictionary['0008|103e']
-        StudyDate         = dictionary['0008|0020']
-        SeriesDate        = dictionary['0008|0021']
-        AcquisitionDate   = dictionary['0008|0022']
-        ContentDate       = dictionary['0008|0023']
-        StudyTime         = dictionary['0008|0030']
-        Modality          = dictionary['0008|0060']
+        try: 
+          StudyDescription  = dictionary['0008|1030']
+        except:
+          StudyDescription  = 'UnknownStudy'
+        try: 
+          SeriesDescription = dictionary['0008|103e']
+        except:
+          SeriesDescription = 'UnknownSeriesDescription'
+        try: 
+          StudyDate         = dictionary['0008|0020']
+        except:
+          StudyDate         = 'UnknownStudyDate'
+        try: 
+          SeriesDate        = dictionary['0008|0021']
+        except:
+          SeriesDate        = 'UnknownSeries'
+        try: 
+          AcquisitionDate   = dictionary['0008|0022']
+        except:
+          AcquisitionDate   = 'UnknownAcquisitionDate'
+        try: 
+          ContentDate       = dictionary['0008|0023']
+        except:
+          ContentDate       = 'UnknownContent'
+        try: 
+          StudyTime         = dictionary['0008|0030']
+        except:
+          StudyTime         = 'UnknownStudyTime'
+        try: 
+          Modality          = dictionary['0008|0060']
+        except:
+          Modality          = 'UnknownModality'
 
         WriteThisUID = True
         # TODO: do we need to filter on anything ? 
@@ -236,7 +258,7 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           writer.SetFileName( "%s.vtk" % outfilename );
           writer.Update() 
           #get pixel buffer and save as MATLAB :)
-          ConvertVTKMatlab( "%s.vtk" % (outfilename),"%s.mat" % (outfilename),dictionary.GetKeys() )
+          ConvertVTKMatlab( "%s.vtk" % (outfilename),"%s.mat" % (outfilename),DicomDictionary )
       except Exception as inst:
         print "error reading: ", uid 
         print inst
@@ -263,8 +285,7 @@ if (options.dicom_dir):
         ##     print os.path.join(dirname, filename)
     # no directories to recurse
     else: 
-        PathToSubDir = os.path.join(dirname, subdirname)
-        ParseDicomDirectoryAndWrite(PathToSubDir)
+        ParseDicomDirectoryAndWrite(dirname)
 elif (options.server):
   # configure server
   config = ConfigParser.ConfigParser()
