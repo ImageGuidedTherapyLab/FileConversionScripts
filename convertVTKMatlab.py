@@ -46,7 +46,7 @@ def ConvertVTKMatlab(input_filename,output_filename):
   image_data       = vtkNumPy.vtk_to_numpy( image_point_data.GetArray(0) ) 
   # write numpy to disk in matlab
   #  indexing is painful.... reshape to dimensions and transpose 2d dimensions only
-  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,image_data.reshape(dimensions,order='F').transpose(1,0,2)})
+  scipyio.savemat( output_filename, {'spacing':spacing, 'origin':origin,'image':image_data.reshape(dimensions,order='F').transpose(1,0,2)})
 
   
 # setup command line parser to control execution
@@ -63,7 +63,8 @@ parser.add_option( "--output_dir",
                   help="output files to this directory", metavar = "DIR")
 (options, args) = parser.parse_args()
 if (options.file_name):
-  ConvertVTKMatlab(options.file_name)
+  OutputFileName = options.file_name.split('.').pop(0) + '.mat'
+  ConvertVTKMatlab(options.file_name,OutputFileName )
 elif (options.file_dir):
   # default output directory to input directory is not set
   OutputDirectory = options.file_dir
