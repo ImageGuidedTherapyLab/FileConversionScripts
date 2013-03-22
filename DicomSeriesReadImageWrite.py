@@ -189,7 +189,10 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
         # get dictionary info
         dictionary = dicomIO.GetMetaDataDictionary()
         # FIXME: Dicom Dictionary not properly imported into matlab this way
+        # itk.GDCMImageIO.GetLabelFromTag(['0008|1030',label])
         DicomDictionary = [ (key, dictionary[key]) for key in dictionary.GetKeys() ]
+        for key in dictionary.GetKeys():
+            print type(key)
         # parse header SeriesDescription for t1 t2 flair
         WriteThisUID = False
         try: 
@@ -207,7 +210,7 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
         try: 
           SeriesDate        = dictionary['0008|0021']
         except:
-          SeriesDate        = 'UnknownSeries'
+          SeriesDate        = 'UnknownSeriesDate'
         try: 
           AcquisitionDate   = dictionary['0008|0022']
         except:
@@ -224,6 +227,15 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           Modality          = dictionary['0008|0060']
         except:
           Modality          = 'UnknownModality'
+        try: 
+          PatientID         = dictionary['0010|0020']
+        except:
+          PatientID         = 'UnknownPatient'
+        try: 
+          SeriesNumber      = dictionary['0020|0011']
+        except:
+          SeriesNumber      = 'UnknownSeriesNumber'
+
 
         WriteThisUID = True
         # TODO: do we need to filter on anything ? 
