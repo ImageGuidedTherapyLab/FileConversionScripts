@@ -188,8 +188,11 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
         reader.Update( )
         # get dictionary info
         dictionary = dicomIO.GetMetaDataDictionary()
-        # FIXME: Dicom Dictionary not properly imported into matlab this way
-        DicomDictionary = [ (key, dictionary[key]) for key in dictionary.GetKeys() ]
+        # FIXME: SCIPY bug will not write dict
+        # DicomDictionary = dict([ (key, dictionary[key]) for key in dictionary.GetKeys() ])
+        DicomDictionary = [ key+' : '+dictionary[key] for key in dictionary.GetKeys() ]
+        # TODO: add labels to tags
+        # itk.GDCMImageIO.GetLabelFromTag(['0008|1030',label])
         # parse header SeriesDescription for t1 t2 flair
         WriteThisUID = False
         try: 
@@ -207,7 +210,7 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
         try: 
           SeriesDate        = dictionary['0008|0021']
         except:
-          SeriesDate        = 'UnknownSeries'
+          SeriesDate        = 'UnknownSeriesDate'
         try: 
           AcquisitionDate   = dictionary['0008|0022']
         except:
@@ -224,6 +227,15 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           Modality          = dictionary['0008|0060']
         except:
           Modality          = 'UnknownModality'
+        try: 
+          PatientID         = dictionary['0010|0020']
+        except:
+          PatientID         = 'UnknownPatient'
+        try: 
+          SeriesNumber      = dictionary['0020|0011']
+        except:
+          SeriesNumber      = 'UnknownSeriesNumber'
+
 
         WriteThisUID = True
         # TODO: do we need to filter on anything ? 
@@ -245,9 +257,11 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           ## 'Specialcharactersspaces888323'
 
           # tag file name with dicom header info to id
-          outfilename = "%s_%s_%s_%s_%s_%s" %(DicomDirectory,StudyDate,StudyTime.replace(' ',''),\
+          outfilename = "%sStudyDate%sSeriesNumber%s_%s_%sPatientID%s_%s" %(DicomDirectory,StudyDate,\
+                 ''.join(e for e in SeriesNumber      if e.isalnum()),\
                  ''.join(e for e in SeriesDescription if e.isalnum()),\
                  ''.join(e for e in StudyDescription  if e.isalnum()),\
+                 ''.join(e for e in PatientID         if e.isalnum()),\
                                     Modality )
           print "writing:", outfilename
           # instantiate writer
