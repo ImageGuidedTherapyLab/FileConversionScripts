@@ -33,6 +33,8 @@ import vtk.util.numpy_support as vtkNumPy
 import numpy
 # used scipy to write matlab files
 import scipy.io as scipyio
+# write tar files
+import tarfile
 
 # define image type
 ImageType  = itk.Image.SS3
@@ -273,6 +275,11 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           writer.Update() 
           #get pixel buffer and save as MATLAB :)
           ConvertVTKMatlab( "%s.vtk" % (outfilename),"%s.mat" % (outfilename),DicomDictionary )
+          #write tarfile with original dicom
+          with tarfile.open("%s.tar" % (outfilename), "w") as tar:
+              for name in fileNames:
+                  tar.add(name,arcname=name.split("/").pop())
+
       except Exception as inst:
         print "error reading: ", uid 
         print inst
