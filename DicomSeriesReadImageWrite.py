@@ -167,7 +167,7 @@ def ConvertVTKMatlab(input_filename,output_filename,headerinfo):
 
 ####################################################################
 
-def ParseDicomDirectoryAndWrite(DicomDirectory):
+def ParseDicomDirectoryAndWrite(DicomDirectory,ProcessDirectory):
    print "working on: ",DicomDirectory  
    nameGenerator = itk.GDCMSeriesFileNames.New()
    nameGenerator.SetUseSeriesDetails( True ) 
@@ -259,7 +259,7 @@ def ParseDicomDirectoryAndWrite(DicomDirectory):
           ## 'Specialcharactersspaces888323'
 
           # tag file name with dicom header info to id
-          outfilename = "%sStudyDate%sSeriesNumber%s_%s_%sPatientID%s_%s" %(DicomDirectory,StudyDate,\
+          outfilename = "%s/StudyDate%sSeriesNumber%s_%s_%sPatientID%s_%s" %(ProcessDirectory,StudyDate,\
                  ''.join(e for e in SeriesNumber      if e.isalnum()),\
                  ''.join(e for e in SeriesDescription if e.isalnum()),\
                  ''.join(e for e in StudyDescription  if e.isalnum()),\
@@ -300,13 +300,13 @@ if (options.dicom_dir):
     if (len(dirnames)):
         for subdirname in dirnames:
             PathToSubDir = os.path.join(dirname, subdirname)
-            ParseDicomDirectoryAndWrite(PathToSubDir)
+            ParseDicomDirectoryAndWrite(PathToSubDir,PathToSubDir)
         ## # print path to all filenames.
         ## for filename in filenames:
         ##     print os.path.join(dirname, filename)
     # no directories to recurse
     else: 
-        ParseDicomDirectoryAndWrite(dirname)
+        ParseDicomDirectoryAndWrite(dirname,dirname)
 elif (options.server):
   # configure server
   config = ConfigParser.ConfigParser()
@@ -314,6 +314,7 @@ elif (options.server):
   storescpEXE = config.get('dcmtk','storescp')
   AETitle     = config.get('dcmtk','aetitle')
   outputdir   = config.get('dcmtk','outputdir')
+  ProcessDir  = config.get('dcmtk','processdir')
   portnumber  = config.getint('dcmtk','port')
   timeout     = config.getint('dcmtk','tos')
   # build server command
@@ -324,7 +325,9 @@ elif (options.server):
   listenerProcess = subprocess.Popen(listenerCMD,shell=True,stdout=subprocess.PIPE )
   while ( listenerProcess.poll() == None ):
           PathToSubDir = listenerProcess.stdout.readline().strip('\n')
-          ParseDicomDirectoryAndWrite(PathToSubDir)
+          PathToOuputProcessDir = "%s/%s" %(ProcessDir,PathToSubDir.split("/").pop())
+          os.mkdir(PathToOuputProcessDir)
+          ParseDicomDirectoryAndWrite(PathToSubDir,PathToOuputProcessDir)
 else:
   parser.print_help()
   print options
