@@ -267,12 +267,18 @@ def ParseDicomDirectoryAndWrite(DicomDirectory,ProcessDirectory):
                                     Modality )
           print "writing:", outfilename
           # instantiate writer
-          writer = itk.ImageFileWriter[ImageType].New()
-          writer.SetInput( reader.GetOutput() )
+          vtkwriter = itk.ImageFileWriter[ImageType].New()
+          vtkwriter.SetInput( reader.GetOutput() )
           #TODO set vtk array name to the series description for ID
           #vtkvectorarray.SetName(SeriesDescription)
-          writer.SetFileName( "%s.vtk" % outfilename );
-          writer.Update() 
+          vtkwriter.SetFileName( "%s.vtk" % outfilename );
+          vtkwriter.Update() 
+          hdrwriter = itk.ImageFileWriter[ImageType].New()
+          hdrwriter.SetInput( reader.GetOutput() )
+          #TODO set vtk array name to the series description for ID
+          #vtkvectorarray.SetName(SeriesDescription)
+          hdrwriter.SetFileName( "%s.hdr" % outfilename );
+          hdrwriter.Update() 
           #get pixel buffer and save as MATLAB :)
           ConvertVTKMatlab( "%s.vtk" % (outfilename),"%s.mat" % (outfilename),DicomDictionary )
           #write tarfile with original dicom
