@@ -296,6 +296,9 @@ parser = OptionParser()
 parser.add_option( "--dicom_dir",
                   action="store", dest="dicom_dir", default=None,
                   help="recursively convert .vtk and .vti files in this directory to .mat files", metavar = "DIR")
+parser.add_option( "--output_dir",
+                  action="store", dest="output_dir", default="Output",
+                  help="output files to this directory", metavar = "DIR")
 parser.add_option( "--server",
                   action="store", dest="server", default=None,
                   help="setup server with ini file", metavar = "INI FILE")
@@ -304,15 +307,19 @@ if (options.dicom_dir):
   for dirname, dirnames, filenames in os.walk(options.dicom_dir):
     # print path to all subdirectories first.
     if (len(dirnames)):
-        for subdirname in dirnames:
-            PathToSubDir = os.path.join(dirname, subdirname)
-            ParseDicomDirectoryAndWrite(PathToSubDir,PathToSubDir)
-        ## # print path to all filenames.
-        ## for filename in filenames:
-        ##     print os.path.join(dirname, filename)
+       # only process directories at the bottom of the tree
+       pass
+       ## for subdirname in dirnames:
+       ##     print dirname,subdirname
+       ##     PathToSubDir = os.path.join(dirname, subdirname)
+       ##     #ParseDicomDirectoryAndWrite(PathToSubDir,PathToSubDir)
+       ## # print path to all filenames.
+       ## for filename in filenames:
+       ##     print os.path.join(dirname, filename)
     # no directories to recurse
     else: 
-        ParseDicomDirectoryAndWrite(dirname,dirname)
+       #print dirname,options.output_dir
+       ParseDicomDirectoryAndWrite(dirname,options.output_dir)
 elif (options.server):
   # configure server
   config = ConfigParser.ConfigParser()
