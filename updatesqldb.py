@@ -1,4 +1,5 @@
 import sqlite3
+import time
 import dicom
 conn = sqlite3.connect('/data/fuentes/DICOM/ctkDICOM.sql')
 # 
@@ -16,7 +17,16 @@ conn.execute('create view studydate        as select * from dicom_header where d
 conn.execute('create view seriedescription as select * from dicom_header where dicomkey = "(0008, 103e)" ')
 
 #fileIDList = [ (seriesUID,filename) for (seriesUID,filename) in conn.execute('select SeriesInstanceUID,Filename from Images limit 5')]
-fileIDList = [ (seriesUID,filename) for (seriesUID,filename) in conn.execute('select SeriesInstanceUID,Filename from Images ')]
+
+# only update files that are "DaysBackOld"
+DaysBack = 2;
+# convert all to seconds
+# 60 sec * 60 min * 24hr = number of secs in day
+datecutoff = time.strftime("%Y-%m-%d",time.localtime(time.time() - 60.*60.*24.*DaysBack )) 
+# select by modality and date
+fileIDList = [ (seriesUID,filename) for (seriesUID,filename) in conn.execute('select im.SeriesInstanceUID,im.Filename from Images im join Series se on im.SeriesInstanceUID=se.SeriesInstanceUID where DateTime(im.InsertTimeStamp) > "%s" and se.Modality like "%%mr%%" ' % datecutoff )]
+
+
 #print fileIDList
 #
 errlogfileHandle = file('err.txt'  ,'w')
