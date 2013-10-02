@@ -45,14 +45,12 @@ for (seriesUID,filename) in fileIDList:
         tableentry=(unicode(str(seriesUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
         conn.execute('insert or ignore into dicom_header (SeriesInstanceUID,dicomkey,name,value) values (?,?,?,?)' , tableentry)
       ## except sqlite3.IntegrityError as inst:
-        # catch key exceptions
-      except ValueError as inst:
+      ## except UnicodeDecodeError as inst:
+      ## except ValueError as inst:
+      # catch key exceptions
+      except Exception as inst:
         errlogfileHandle.write("%s," % inst )
         errlogfileHandle.write('%s,%s\n' %  ( unicode(str(seriesUID)),unicode(str(dcmkey)) ) )
-      ## except Exception as inst:
-      except UnicodeDecodeError as inst:
-        errlogfileHandle.write("%s," % inst )
-        errlogfileHandle.write('%s,%s,%s,%s\n' %  tableentry )
       finally:
         # this is always executed
         errlogfileHandle.flush()
