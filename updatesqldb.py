@@ -1,7 +1,8 @@
 import sqlite3
 import time
 import dicom
-conn = sqlite3.connect('/data/fuentes/DICOM/ctkDICOM.sql')
+#conn = sqlite3.connect('/data/fuentes/DICOM/ctkDICOM.sql')
+conn = sqlite3.connect('/mnt/data/SlicerDicom/ctkDICOM.sql')
 # 
 # drop table dicom_header; 
 # delete from dicom_header; 
@@ -28,31 +29,31 @@ fileIDList = [ (seriesUID,filename) for (seriesUID,filename) in conn.execute('se
 
 
 #print fileIDList
-#
 errlogfileHandle = file('err.txt'  ,'w')
 for (seriesUID,filename) in fileIDList:
   print 'Processing %s' % filename
   dcm=dicom.read_file(filename);
-  # remove problem keys
-  problemkeylist = [(0x7fe0,0x0010),(0x0043,0x1095),(0x0043,0x1028),(0x0043,0x1029),(0x0043,0x102a),(0x0025,0x101b),(0x0028,0x0107)]
-  keylist = [dcmkey for dcmkey in dcm.keys() if dcmkey not in problemkeylist ]
-  for dcmkey in keylist :
+  # loop over all keys
+  for dcmkey in dcm.keys() :
       try: 
         # catch key exceptions
         name=dcm[dcmkey].name;
         value=dcm[dcmkey].value;
-        # insert and ignore duplicate entries
         tableentry=(unicode(str(seriesUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
-        conn.execute('insert or ignore into dicom_header (SeriesInstanceUID,dicomkey,name,value) values (?,?,?,?)' , tableentry)
+        # insert and ignore duplicate entries
       ## except sqlite3.IntegrityError as inst:
       ## except UnicodeDecodeError as inst:
       ## except ValueError as inst:
       # catch key exceptions
       except Exception as inst:
+        name='NameException'
+        value='ValueException'
+        tableentry=(unicode(str(seriesUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
         errlogfileHandle.write("%s," % inst )
         errlogfileHandle.write('%s,%s\n' %  ( unicode(str(seriesUID)),unicode(str(dcmkey)) ) )
       finally:
         # this is always executed
+        conn.execute('insert or ignore into dicom_header (SeriesInstanceUID,dicomkey,name,value) values (?,?,?,?)' , tableentry)
         errlogfileHandle.flush()
   conn.commit()
 
