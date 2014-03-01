@@ -1,4 +1,4 @@
-function saveVTKFile(filename,varname, data, header)
+function saveVTKFile(filename,varname, data, spacing)
 %SAVEVTKFILE Save data to VTK file.
 %   Save 2D or 3D data to VTK file. The given header infomation needs to be
 %   output of 'dicominfo'.
@@ -17,12 +17,14 @@ function saveVTKFile(filename,varname, data, header)
     dimensions(2) = size(data,2);
     dimensions(3) = size(data,3);
     
-    %% Set pixel spacing.
-    spacing = zeros(1,3);
-    spacing(1) = header.PixelSpacing(1);
-    spacing(2) = header.PixelSpacing(2);
-    spacing(3) = header.SliceThickness;
-    
+    %% error check spacing
+    if(size(spacing) ~= 3)
+      disp('incorrect spacing input');
+      disp('expecting 3d data ');
+      disp(' -or-  2d with one slice ');
+      return
+    end
+
     %% Image position.
     origin = zeros(1,3);
     %origin(1) = header.ImagePositionPatient(1);
