@@ -17,17 +17,27 @@ class STLImageHelper:
     stlReader.SetFileName( InputImageFileName ) 
     stlReader.Update()
     self.stlData = stlReader.GetOutput()
+    stlpoints = self.stlData.GetPoints() 
 
     # VOI Origin should be at the lower bound
     VOIBounds                 = self.stlData.GetBounds()
-    self.origin               = (VOIBounds[0],VOIBounds[2],VOIBounds[4])
-    self.dimensions           = (100,100,20,1)
-    self.spacing              = ((VOIBounds[1] - VOIBounds[0])/self.dimensions[0],
-                                 (VOIBounds[3] - VOIBounds[2])/self.dimensions[1],
-                                 (VOIBounds[5] - VOIBounds[4])/self.dimensions[2])
+    self.origin               = (VOIBounds[0]-1.,VOIBounds[2]-1.,VOIBounds[4]-1.)
+    self.dimensions           = (256,256,100,1)
+    self.spacing              = ((VOIBounds[1]+1. - self.origin[0])/self.dimensions[0],
+                                 (VOIBounds[3]+1. - self.origin[1])/self.dimensions[1],
+                                 (VOIBounds[5]+1. - self.origin[2])/self.dimensions[2])
     numpyimagesize = self.dimensions[0]*self.dimensions[1]*self.dimensions[2]
     # store as double precision
-    self.ImageFile = numpy.zeros( numpyimagesize, dtype=numpy.float )
+    self.ImageFile = numpy.zeros( numpyimagesize, dtype=numpy.float32 )
+    for ipoint in range(stlpoints.GetNumberOfPoints() ):
+        CurrentPoint = stlpoints.GetPoint(ipoint)
+        XIndex       = int( ( CurrentPoint[0]-self.origin[0])/ self.spacing[0] ) 
+        YIndex       = int( ( CurrentPoint[1]-self.origin[1])/ self.spacing[1] ) 
+        ZIndex       = int( ( CurrentPoint[2]-self.origin[2])/ self.spacing[2] ) 
+        CurrentIndex =   XIndex   \
+                       + YIndex * self.dimensions[0] \
+                       + ZIndex * self.dimensions[0] * self.dimensions[1]
+        self.ImageFile[CurrentIndex ] = 1.
 
   # write a numpy data to disk in vtk format
   def ConvertNumpyVTKImage(self,NumpyImageData):
@@ -69,18 +79,19 @@ if (options.file_name):
   stlHelper = STLImageHelper(options.file_name)
   vtkImage  = stlHelper.ConvertNumpyVTKImage(stlHelper.ImageFile) 
   
-  print "resampling"
-  vtkResample = vtk.vtkCompositeDataProbeFilter()
-  vtkResample.SetSource( stlHelper.stlData )
-  vtkResample.SetInput(  vtkImage  )
-  vtkResample.Update()
-  print vtkResample.GetOutput()
+  ##print "resampling"
+  ##vtkResample = vtk.vtkCompositeDataProbeFilter()
+  ##vtkResample.SetSource( stlHelper.stlData )
+  ##vtkResample.SetInput(  vtkImage  )
+  ##vtkResample.Update()
+  ##print vtkResample.GetOutput()
 
   vtkImageDataWriter = vtk.vtkDataSetWriter()
   vtkImageDataWriter.SetFileTypeToBinary()
   print "writing ", OutputFileName 
   vtkImageDataWriter.SetFileName( OutputFileName )
-  vtkImageDataWriter.SetInput(vtkResample.GetOutput())
+  ##vtkImageDataWriter.SetInput(vtkResample.GetOutput())
+  vtkImageDataWriter.SetInput(vtkImage  )
   vtkImageDataWriter.Update()
 
 else:
