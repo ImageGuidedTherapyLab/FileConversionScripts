@@ -149,6 +149,7 @@ int main( int argc, char* argv[] )
 
   nameGenerator->SetUseSeriesDetails( true );
   nameGenerator->AddSeriesRestriction("0008|0021" );
+  nameGenerator->AddSeriesRestriction("0020|0013" );
 
   nameGenerator->SetDirectory( argv[1] );
 // Software Guide : EndCodeSnippet
@@ -236,6 +237,89 @@ int main( int argc, char* argv[] )
 
     fileNames = nameGenerator->GetFileNames( seriesIdentifier );
 // Software Guide : EndCodeSnippet
+    FileNamesContainer::const_iterator fileNamesItr = fileNames.begin();
+    FileNamesContainer::const_iterator fileNamesEnd = fileNames.end();
+    while( fileNamesItr != fileNamesEnd )
+      {
+      std::cout << fileNamesItr->c_str() << std::endl;
+      ImageIOType::Pointer dicomIOSingle = ImageIOType::New();
+      // Software Guide : BeginLatex
+      //
+      // Here we override the gdcm default value of 0xfff with a value of 0xffff
+      // to allow the loading of long binary stream in the DICOM file.
+      // This is particularly useful when reading the private tag: 0029,1010
+      // from Siemens as it allows to completely specify the imaging parameters
+      //
+      // Software Guide : EndLatex
+      dicomIOSingle->SetMaxSizeLoadEntry(0xffff);
+
+      typedef itk::ImageFileReader< ImageType >     ReaderTypeSingle;
+      ReaderTypeSingle::Pointer readerSingle = ReaderTypeSingle::New();
+
+      // Software Guide : BeginCodeSnippet
+      readerSingle->SetFileName( fileNamesItr->c_str() );
+      readerSingle->SetImageIO( dicomIOSingle );
+      try
+        {
+        // Software Guide : BeginCodeSnippet
+        readerSingle->Update();
+        // Software Guide : EndCodeSnippet
+        }
+      catch (itk::ExceptionObject &ex)
+        {
+        std::cout << ex << std::endl;
+        return EXIT_FAILURE;
+        }
+      // Software Guide : BeginLatex
+      //
+      //  Another way to read a specific tag is to use the encapsulation above MetaDataDictionary
+      //  Note that this is stricly equivalent to the above code.
+      //
+      // Software Guide : EndLatex
+
+      // Software Guide : BeginCodeSnippet
+      std::string slicelockey = "0020|1041";
+      std::string instancekey = "0020|0013"; 
+      std::string labelId;
+      if( itk::GDCMImageIO::GetLabelFromTag( slicelockey , labelId ) )
+        {
+        std::string value;
+        std::cout << labelId << " (" << slicelockey << "): ";
+        if( dicomIOSingle->GetValueFromTag(slicelockey , value) )
+          {
+          std::cout << value;
+          }
+        else
+          {
+          std::cout << "(No Value Found in File)";
+          }
+        std::cout << std::endl;
+        }
+      else
+        {
+        std::cerr << "Trying to access inexistant DICOM tag." << std::endl;
+        }
+      if( itk::GDCMImageIO::GetLabelFromTag( instancekey , labelId ) )
+        {
+        std::string value;
+        std::cout << labelId << " (" << instancekey << "): ";
+        if( dicomIOSingle->GetValueFromTag(instancekey , value) )
+          {
+          std::cout << value;
+          }
+        else
+          {
+          std::cout << "(No Value Found in File)";
+          }
+        std::cout << std::endl;
+        }
+      else
+        {
+        std::cerr << "Trying to access inexistant DICOM tag." << std::endl;
+        }
+      // Software Guide : EndCodeSnippet
+      ++fileNamesItr ;
+      }
 
 // Software Guide : BeginLatex
 //
