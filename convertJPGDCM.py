@@ -18,6 +18,8 @@ def ConvertJPGDirectory(work_dir,output_dir):
     convertcmd = "c3d -mcs %s -type uchar -omc %s" % (CurrentInFileName, CurrentOutFileName )
     print convertcmd 
     os.system(convertcmd )
+    swapheaderdmc = "DicomImageReadChangeHeaderWrite %s  %s '0008|0090' wolfpac" % (CurrentOutFileName, CurrentOutFileName)
+    print swapheaderdmc 
     print "%d of %d:read %s wrote %s" % (idlist,len(filenames),CurrentInFileName,CurrentOutFileName)
 
   
