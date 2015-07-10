@@ -21,6 +21,7 @@ def ConvertJPGDirectory(work_dir,output_dir):
     # FIXME - what tags should we change
     swapheaderdmc = "DicomImageReadChangeHeaderWrite %s  %s '0008|0060' MR '0008|0090' wolfpac '0008|1050' ping" % (CurrentOutFileName, CurrentOutFileName)
     print swapheaderdmc 
+    os.system(swapheaderdmc )
     print "%d of %d:read %s wrote %s" % (idlist,len(filenames),CurrentInFileName,CurrentOutFileName)
 
   
