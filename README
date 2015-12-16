@@ -4,3 +4,77 @@ c3d outtest/* -omc test4d.nii.gz
 
 (need to add header info)
 
+NRRD0005
+# Complete NRRD file format specification at:
+# http://teem.sourceforge.net/nrrd/format.html
+type: unsigned short
+dimension: 4
+space: right-anterior-superior
+sizes: 35 512 512 24
+space directions: none (-0.5,1.025517e-10,0) (-1.025517e-10,-0.5,0) (0,0,2)
+kinds: list domain domain domain
+endian: little
+encoding: gzip
+space origin: (116.14639282226562,165.02201843261719,-62.511554718017578)
+measurement frame: (1,0,0) (0,1,0) (0,0,1)
+MultiVolume.DICOM.EchoTime:=1.32
+MultiVolume.DICOM.FlipAngle:=15
+MultiVolume.DICOM.RepetitionTime:=5.14
+MultiVolume.FrameIdentifyingDICOMTagName:=AcquisitionTime
+MultiVolume.FrameIdentifyingDICOMTagUnits:=ms
+MultiVolume.FrameLabels:=0.0,8897.5,17795.0,26692.5,35590.0,44487.5,53382.5,62280.0,71177.5,80075.0,88972.5,97870.0,106767.5,115665.0,124562.5,133460.0,142357.5,151255.0,160150.0,169047.5,177945.0,186842.5,195740.0,204637.5,213535.0,222432.5,231330.0,240227.5,249125.0,258022.5,266917.5,275815.0,284712.5,293610.0,302507.5
+MultiVolume.NumberOfFrames:=35
+
+
+Slicer-4.5.0-1-linux-amd64/lib/Slicer-4.5/qt-scripted-modules/MultiVolumeImporterPlugin.py
+==========================================
+
+class MultiVolumeImporterPluginClass(DICOMPlugin):
+  """ MV specific interpretation code
+  """
+
+  def __init__(self,epsilon=0.01):
+    super(MultiVolumeImporterPluginClass,self).__init__()
+    self.loadType = "MultiVolume"
+
+    self.tags['seriesInstanceUID'] = "0020,000E"
+    self.tags['seriesDescription'] = "0008,103E"
+    self.tags['instanceUID'] = "0008,0018"
+    self.tags['position'] = "0020,0032"
+    self.tags['studyDescription'] = "0008,1030"
+    self.tags['seriesNumber'] = "0020,0011"
+
+    # tags used to identify multivolumes
+    self.multiVolumeTags = {}
+    self.multiVolumeTags['TriggerTime'] = "0018,1060"
+    self.multiVolumeTags['EchoTime'] = "0018,0081"
+    self.multiVolumeTags['FlipAngle'] = "0018,1314"
+    self.multiVolumeTags['RepetitionTime'] = "0018,0080"
+    self.multiVolumeTags['AcquisitionTime'] = "0008,0032"
+    self.multiVolumeTags['SeriesTime'] = "0008,0031"
+    # this one is GE-specific using the private tag
+    self.multiVolumeTags['Siemens.B-value'] = "0019,100c"
+    self.multiVolumeTags['GE.B-value'] = "0043,1039"
+    # used on some GE systems, with 2D acquisitions
+    self.multiVolumeTags['TemporalPositionIdentifier'] = "0020,0100"
+    # Philips DWI
+    self.multiVolumeTags['Philips.B-value'] = "2001,1003"
+    self.multiVolumeTags['Standard.B-value'] = "0018,9807"
+
+    for tagName,tagVal in self.multiVolumeTags.iteritems():
+      self.tags[tagName] = tagVal
+
+    self.multiVolumeTagsUnits = {}
+    self.multiVolumeTagsUnits['TriggerTime'] = "ms"
+    self.multiVolumeTagsUnits['EchoTime'] = "ms"
+    self.multiVolumeTagsUnits['FlipAngle'] = "degrees"
+    self.multiVolumeTagsUnits['RepetitionTime'] = "ms"
+    self.multiVolumeTagsUnits['AcquisitionTime'] = "ms"
+    self.multiVolumeTagsUnits['SeriesTime'] = "ms"
+    self.multiVolumeTagsUnits['TemporalPositionIdentifier'] = "count"
+    self.multiVolumeTagsUnits['Siemens.B-value'] = "sec/mm2"
+    self.multiVolumeTagsUnits['GE.B-value'] = "sec/mm2"
+    self.multiVolumeTagsUnits['Philips.B-value'] = "sec/mm2"
+    self.multiVolumeTags['Standard.B-value'] = "sec/mm2"
+    self.epsilon = epsilon
+
