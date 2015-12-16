@@ -48,6 +48,7 @@
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
+#include <stdlib.h>  // atoi
 // Software Guide : EndCodeSnippet
 
 int main( int argc, char* argv[] )
@@ -56,7 +57,7 @@ int main( int argc, char* argv[] )
   if( argc < 3 )
     {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " DicomDirectory  outputFileName  [seriesName]"
+    std::cerr << argv[0] << " DicomDirectory  outputFileName  [stack split tag]"
               << std::endl;
     return EXIT_FAILURE;
     }
@@ -155,16 +156,23 @@ int main( int argc, char* argv[] )
   nameGenerator->AddSeriesRestriction("0008|0021" );   // Series Date
   //nameGenerator->AddSeriesRestriction("0020|1041" ); // slice location
 
+  std::string entryId = "0020|0012" ; // acquisition number
   if( argc > 3 ) // change the stack break criteria
     {
-    nameGenerator->AddSeriesRestriction( argv[3] ); 
+    entryId = argv[3];
+    }
+  std::string labelId;
+  if( itk::GDCMImageIO::GetLabelFromTag( entryId , labelId ) )
+    {
+    std::cout << labelId << " (" << entryId << "): ";
     }
   else
     {
-    nameGenerator->AddSeriesRestriction("0020|0012" ); // acquisition number
+    std::cerr << "Trying to access inexistant DICOM tag." << entryId<< std::endl;
+    return EXIT_FAILURE;
     }
 
-
+  nameGenerator->AddSeriesRestriction(entryId  ); 
   nameGenerator->SetDirectory( argv[1] );
 // Software Guide : EndCodeSnippet
 
@@ -273,6 +281,48 @@ int main( int argc, char* argv[] )
      // Software Guide : EndCodeSnippet
      
      
+     typedef itk::MetaDataDictionary   DictionaryType;
+     const  DictionaryType & dictionary = dicomIO->GetMetaDataDictionary();
+     DictionaryType::ConstIterator tagItr = dictionary.Find( entryId );
+     DictionaryType::ConstIterator dictend = dictionary.End();
+
+     if( tagItr == dictend )
+       {
+       std::cerr << "Tag " << entryId;
+       std::cerr << " not found in the DICOM header" << std::endl;
+       return EXIT_FAILURE;
+       }
+     // Software Guide : EndCodeSnippet
+
+     // Software Guide : BeginLatex
+     //
+     // Since the entry may or may not be of string type we must again use a
+     // \code{dynamic\_cast} in order to attempt to convert it to a string dictionary
+     // entry. If the conversion is successful, we can then print out its content.
+     //
+     // Software Guide : EndLatex
+
+     // Software Guide : BeginCodeSnippet
+     typedef itk::MetaDataObject< std::string > MetaDataStringType;
+     MetaDataStringType::ConstPointer entryvalue =
+       dynamic_cast<const MetaDataStringType *>( tagItr->second.GetPointer() );
+
+     std::ostringstream outputfilename ;
+     if( entryvalue )
+       {
+       std::string tagvalue = entryvalue->GetMetaDataObjectValue();
+       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nii.gz";
+
+       }
+
+     else
+       {
+       std::cerr << "Entry was not of string type" << std::endl;
+       return EXIT_FAILURE;
+       }
+     std::string outputfile= outputfilename.str();
+     
+     // Software Guide : EndCodeSnippet
      // Software Guide : BeginLatex
      //
      // At this point, we have a volumetric image in memory that we can access by
@@ -293,10 +343,6 @@ int main( int argc, char* argv[] )
          typedef itk::ImageFileWriter< ImageType > WriterType;
          WriterType::Pointer writer = WriterType::New();
 
-         std::ostringstream outputfilename ;
-         outputfilename << seriesIdentifier << argv[2];
-         std::string outputfile= outputfilename.str();
-     
          writer->SetFileName( outputfile );
      
          writer->SetInput( reader->GetOutput() );
