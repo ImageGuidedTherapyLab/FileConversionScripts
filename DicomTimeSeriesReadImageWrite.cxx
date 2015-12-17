@@ -48,6 +48,7 @@
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
+#include "itkMetaDataDictionary.h"
 #include <stdlib.h>  // atoi
 // Software Guide : EndCodeSnippet
 
@@ -311,7 +312,8 @@ int main( int argc, char* argv[] )
      if( entryvalue )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nii.gz";
+       outputfilename << argv[2] << std::setfill('0') << std::setw(5) <<
+atoi(tagvalue.c_str()) << ".nrrd";
 
        }
 
@@ -343,6 +345,9 @@ int main( int argc, char* argv[] )
          typedef itk::ImageFileWriter< ImageType > WriterType;
          WriterType::Pointer writer = WriterType::New();
 
+     // add key value pairs
+     itk::MetaDataDictionary &                       thisDic = reader->GetOutput()->GetMetaDataDictionary();
+     itk::EncapsulateMetaData< std::string >( thisDic, "dftest", "testkeyvalue");
          writer->SetFileName( outputfile );
      
          writer->SetInput( reader->GetOutput() );
