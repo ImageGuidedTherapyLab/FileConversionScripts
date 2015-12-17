@@ -1,5 +1,6 @@
 ./DicomTimeSeriesReadImageWrite testdce/ outtest/
-c3d outtest/* -omc test4d.nii.gz
+c3d outtest/* -omc test4d.nrrd
+grep MultiVolume.FrameLabels outtest/*.nhdr | cut -d '=' -f 2
  
 
 (need to add header info)

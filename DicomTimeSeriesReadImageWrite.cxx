@@ -311,7 +311,7 @@ int main( int argc, char* argv[] )
      if( entryvalue )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nrrd";
+       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nhdr";
 
        }
      else
