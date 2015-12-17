@@ -295,7 +295,6 @@ int main( int argc, char* argv[] )
        }
      // Software Guide : EndCodeSnippet
 
-     // Software Guide : BeginLatex
      //
      // Since the entry may or may not be of string type we must again use a
      // \code{dynamic\_cast} in order to attempt to convert it to a string dictionary
@@ -312,11 +311,9 @@ int main( int argc, char* argv[] )
      if( entryvalue )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       outputfilename << argv[2] << std::setfill('0') << std::setw(5) <<
-atoi(tagvalue.c_str()) << ".nrrd";
+       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nrrd";
 
        }
-
      else
        {
        std::cerr << "Entry was not of string type" << std::endl;
@@ -324,6 +321,114 @@ atoi(tagvalue.c_str()) << ".nrrd";
        }
      std::string outputfile= outputfilename.str();
      
+     // find additional meta data
+     std::string TagTriggerTime      = "0018|1060";
+     std::string TagAcquisitionTime  = "0008|0032";
+     std::string TagSeriesTime       = "0008|0031";
+     std::string TagRepetitionTime   = "0018|0080";
+     std::string TagEchoTime         = "0018|0081";
+     std::string TagFlipAngle        = "0018|1314";
+
+     std::string FrameIdentifyingDICOMTagName;
+     std::string FrameIdentifyingDICOMTagUnits = "ms";
+
+     // get dictionary data
+     DictionaryType::ConstIterator tagItrTriggerTime      = dictionary.Find( TagTriggerTime     );
+     DictionaryType::ConstIterator tagItrAcquisitionTime  = dictionary.Find( TagAcquisitionTime );
+     DictionaryType::ConstIterator tagItrSeriesTime       = dictionary.Find( TagSeriesTime      );
+     if( tagItrTriggerTime != dictend )
+       {
+       FrameIdentifyingDICOMTagName = "TriggerTime";
+       entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrTriggerTime->second.GetPointer() );
+       }
+     else if( tagItrAcquisitionTime  != dictend )
+       {
+       FrameIdentifyingDICOMTagName = "AcquisitionTime";
+       entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrAcquisitionTime->second.GetPointer() );
+       }
+     else if( tagItrSeriesTime       != dictend )
+       {
+       FrameIdentifyingDICOMTagName = "SeriesTime";
+       entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrSeriesTime->second.GetPointer() );
+       }
+     else 
+       {
+       std::cerr << " Timing info not found in the DICOM header" << std::endl;
+       return EXIT_FAILURE;
+       }
+
+     std::string ValueIdentifyTime ;
+     if( entryvalue )
+       {
+       ValueIdentifyTime   = entryvalue->GetMetaDataObjectValue();
+       std::cout << FrameIdentifyingDICOMTagName << " " << ValueIdentifyTime  << std::endl;
+       }
+     else
+       {
+       std::cerr << "Entry was not of string type" << std::endl;
+       return EXIT_FAILURE;
+       }
+
+     // sequence info
+     DictionaryType::ConstIterator tagItrRepetitionTime   = dictionary.Find( TagRepetitionTime  );
+     DictionaryType::ConstIterator tagItrEchoTime         = dictionary.Find( TagEchoTime        );
+     DictionaryType::ConstIterator tagItrFlipAngle        = dictionary.Find( TagFlipAngle       );
+     std::string ValueEchoTime         ;
+     std::string ValueFlipAngle        ;
+     std::string ValueRepetitionTime   ;
+     if( tagItrRepetitionTime == dictend )
+       {
+       std::cerr << TagRepetitionTime << "  not found in the DICOM header" << std::endl;
+       return EXIT_FAILURE;
+       }
+     entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrRepetitionTime->second.GetPointer() );
+     if( entryvalue )
+       {
+       ValueRepetitionTime   = entryvalue->GetMetaDataObjectValue();
+       std::cout << TagRepetitionTime  << " " << ValueRepetitionTime   << std::endl;
+       }
+     else
+       {
+       std::cerr << "Entry was not of string type" << std::endl;
+       return EXIT_FAILURE;
+       }
+
+     if( tagItrEchoTime       == dictend )
+       {
+       std::cerr << TagEchoTime       << "  not found in the DICOM header" << std::endl;
+       return EXIT_FAILURE;
+       }
+     entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrEchoTime->second.GetPointer() );
+     if( entryvalue )
+       {
+       ValueEchoTime   = entryvalue->GetMetaDataObjectValue();
+       std::cout << TagEchoTime  << " " << ValueEchoTime   << std::endl;
+       }
+     else
+       {
+       std::cerr << "Entry was not of string type" << std::endl;
+       return EXIT_FAILURE;
+       }
+
+
+     if( tagItrFlipAngle      == dictend )
+       {
+       std::cerr << TagFlipAngle      << "  not found in the DICOM header" << std::endl;
+       return EXIT_FAILURE;
+       }
+     entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrFlipAngle->second.GetPointer() );
+     if( entryvalue )
+       {
+       ValueFlipAngle   = entryvalue->GetMetaDataObjectValue();
+       std::cout << TagFlipAngle  << " " << ValueFlipAngle   << std::endl;
+       }
+     else
+       {
+       std::cerr << "Entry was not of string type" << std::endl;
+       return EXIT_FAILURE;
+       }
+
+     // Software Guide : BeginLatex
      // Software Guide : EndCodeSnippet
      // Software Guide : BeginLatex
      //
@@ -347,7 +452,12 @@ atoi(tagvalue.c_str()) << ".nrrd";
 
      // add key value pairs
      itk::MetaDataDictionary &                       thisDic = reader->GetOutput()->GetMetaDataDictionary();
-     itk::EncapsulateMetaData< std::string >( thisDic, "dftest", "testkeyvalue");
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.EchoTime"               , ValueEchoTime                 );
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.FlipAngle"              , ValueFlipAngle                );
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.RepetitionTime"         , ValueRepetitionTime           );
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , ValueIdentifyTime             );
+     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
          writer->SetFileName( outputfile );
      
          writer->SetInput( reader->GetOutput() );
