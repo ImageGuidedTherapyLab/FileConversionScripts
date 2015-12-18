@@ -209,6 +209,16 @@ int main( int argc, char* argv[] )
   // deep copy image pointers
   std::vector<ImageType::Pointer> imagepointerarray;
 
+  // header info
+  std::string ValueEchoTime         ;
+  std::string ValueFlipAngle        ;
+  std::string ValueRepetitionTime   ;
+  std::string FrameIdentifyingDICOMTagName;
+  std::string FrameIdentifyingDICOMTagUnits = "ms";
+  std::string ValueIdentifyTime ;
+  std::map<int,float > TimingArray;
+
+
   try
     {
     std::cout << std::endl << "The directory: " << std::endl;
@@ -347,8 +357,7 @@ int main( int argc, char* argv[] )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
        idtime = atoi(tagvalue.c_str());
-       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
-
+       outputfilename << argv[2] << "/" << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
        }
      else
        {
@@ -365,8 +374,6 @@ int main( int argc, char* argv[] )
      std::string TagEchoTime         = "0018|0081";
      std::string TagFlipAngle        = "0018|1314";
 
-     std::string FrameIdentifyingDICOMTagName;
-     std::string FrameIdentifyingDICOMTagUnits = "ms";
 
      // get dictionary data
      DictionaryType::ConstIterator tagItrTriggerTime      = dictionary.Find( TagTriggerTime     );
@@ -393,7 +400,6 @@ int main( int argc, char* argv[] )
        return EXIT_FAILURE;
        }
 
-     std::string ValueIdentifyTime ;
      if( entryvalue )
        {
        ValueIdentifyTime   = entryvalue->GetMetaDataObjectValue();
@@ -409,9 +415,6 @@ int main( int argc, char* argv[] )
      DictionaryType::ConstIterator tagItrRepetitionTime   = dictionary.Find( TagRepetitionTime  );
      DictionaryType::ConstIterator tagItrEchoTime         = dictionary.Find( TagEchoTime        );
      DictionaryType::ConstIterator tagItrFlipAngle        = dictionary.Find( TagFlipAngle       );
-     std::string ValueEchoTime         ;
-     std::string ValueFlipAngle        ;
-     std::string ValueRepetitionTime   ;
      if( tagItrRepetitionTime == dictend )
        {
        std::cerr << TagRepetitionTime << "  not found in the DICOM header" << std::endl;
@@ -486,14 +489,6 @@ int main( int argc, char* argv[] )
          typedef itk::ImageFileWriter< ImageType > WriterType;
          WriterType::Pointer writer = WriterType::New();
 
-         // add key value pairs
-         itk::MetaDataDictionary &                       thisDic = reader->GetOutput()->GetMetaDataDictionary();
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.EchoTime"               , ValueEchoTime                 );
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.FlipAngle"              , ValueFlipAngle                );
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.RepetitionTime"         , ValueRepetitionTime           );
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , ValueIdentifyTime             );
-         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
          writer->SetFileName( outputfile );
          writer->SetInput( reader->GetOutput() );
          // Software Guide : EndCodeSnippet
@@ -511,15 +506,17 @@ int main( int argc, char* argv[] )
          try
            {
 // Software Guide : BeginCodeSnippet
-           writer->Update();
+           //writer->Update();
+           reader->Update();
 
-  // append time instance
-  ImageType::Pointer imagecopy = ImageType::New();
-  DeepCopy<ImageType>(reader->GetOutput() , imagecopy );
-
-  // FIXME - use pointer array to hold all image in memory for write
-  imagepointerarray.push_back( imagecopy  );
-  vectorFilter->SetInput( idtime-1,imagecopy  );
+           // append time instance
+           ImageType::Pointer imagecopy = ImageType::New();
+           DeepCopy<ImageType>(reader->GetOutput() , imagecopy );
+         
+           // FIXME - use pointer array to hold all image in memory for write
+           imagepointerarray.push_back( imagecopy  );
+           vectorFilter->SetInput( idtime-1,imagecopy  );
+           TimingArray[idtime-1] =  1000. * atof( ValueIdentifyTime.c_str() ); // ms
 
 // Software Guide : EndCodeSnippet
            }
@@ -535,9 +532,27 @@ int main( int argc, char* argv[] )
     vectorFilter->Update();
     VectorImageType::Pointer vectorimage = vectorFilter->GetOutput();
 
+    std::ostringstream TimingArrayValues ;
+    TimingArrayValues <<  "0.0" ; 
+    for ( int iii =1 ; iii< TimingArray.size() ; iii++)
+       TimingArrayValues << "," << TimingArray[iii] - TimingArray[0] ; 
+
+
+    // add key value pairs
+    itk::MetaDataDictionary &                       thisDic = vectorimage->GetMetaDataDictionary();
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.EchoTime"               , ValueEchoTime                 );
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.FlipAngle"              , ValueFlipAngle                );
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.RepetitionTime"         , ValueRepetitionTime           );
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , TimingArrayValues.str()       );
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
+
+
     typedef itk::ImageFileWriter< VectorImageType > VectorWriterType;
     VectorWriterType::Pointer vectorwriter = VectorWriterType::New();
-    vectorwriter->SetFileName( "./vectorimage.nrrd" );
+    std::ostringstream output4dfilename ;
+    output4dfilename << argv[2] << ".nrrd";
+    vectorwriter->SetFileName( output4dfilename.str()  );
     vectorwriter->SetInput( vectorFilter->GetOutput() );
     vectorwriter->Update( );
 

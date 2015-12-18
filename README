@@ -1,8 +1,5 @@
-./DicomTimeSeriesReadImageWrite testdce/ outtest/
-c3d outtest/* -omc test4d.nrrd
-grep MultiVolume.FrameLabels outtest/*.nhdr | cut -d '=' -f 2 | sed ':a;N;$!ba;s/\n/,/g' | sed 's/\ //g'
+./DicomTimeSeriesReadImageWrite testdce/ outtest
 
-(need to add header info)
 
 NRRD0005
 # Complete NRRD file format specification at:
