@@ -1,7 +1,6 @@
 ./DicomTimeSeriesReadImageWrite testdce/ outtest/
 c3d outtest/* -omc test4d.nrrd
-grep MultiVolume.FrameLabels outtest/*.nhdr | cut -d '=' -f 2
- 
+grep MultiVolume.FrameLabels outtest/*.nhdr | cut -d '=' -f 2 | sed ':a;N;$!ba;s/\n/,/g' | sed 's/\ //g'
 
 (need to add header info)
 

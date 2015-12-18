@@ -49,8 +49,31 @@
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
 #include "itkMetaDataDictionary.h"
+#include "itkComposeImageFilter.h"
+#include "itkVectorImage.h"
 #include <stdlib.h>  // atoi
 // Software Guide : EndCodeSnippet
+
+#include "itkImageRegionIterator.h"
+ 
+template<typename TImage>
+void DeepCopy(typename TImage::Pointer input, typename TImage::Pointer output)
+{
+  output->SetRegions(input->GetLargestPossibleRegion());
+  output->Allocate();
+ 
+  itk::ImageRegionConstIterator<TImage> inputIterator(input, input->GetLargestPossibleRegion());
+  itk::ImageRegionIterator<TImage> outputIterator(output, output->GetLargestPossibleRegion());
+ 
+  while(!inputIterator.IsAtEnd())
+    {
+    outputIterator.Set(inputIterator.Get());
+    ++inputIterator;
+    ++outputIterator;
+    }
+}
+ 
+
 
 int main( int argc, char* argv[] )
 {
@@ -80,6 +103,12 @@ int main( int argc, char* argv[] )
   const unsigned int      Dimension = 3;
 
   typedef itk::Image< PixelType, Dimension >         ImageType;
+
+  // compose 4d series as vector image
+  typedef itk::ComposeImageFilter< ImageType >      VectorImageFilterType;
+  typedef itk::VectorImage< PixelType, Dimension >  VectorImageType;
+  VectorImageFilterType::Pointer vectorFilter = VectorImageFilterType::New();
+
 // Software Guide : EndCodeSnippet
 
 // Software Guide : BeginLatex
@@ -177,6 +206,8 @@ int main( int argc, char* argv[] )
   nameGenerator->SetDirectory( argv[1] );
 // Software Guide : EndCodeSnippet
 
+  // deep copy image pointers
+  std::vector<ImageType::Pointer> imagepointerarray;
 
   try
     {
@@ -204,7 +235,8 @@ int main( int argc, char* argv[] )
 
     SeriesIdContainer::const_iterator seriesItr = seriesUID.begin();
     SeriesIdContainer::const_iterator seriesEnd = seriesUID.end();
-    while( seriesItr != seriesEnd )
+    int idtime = 0 ;
+    while( seriesItr != seriesEnd  )
       {
       std::string seriesIdentifier = seriesItr->c_str();
       std::cout << std::endl << std::endl;
@@ -213,73 +245,76 @@ int main( int argc, char* argv[] )
       std::cout << std::endl << std::endl;
 
 
-     // Software Guide : BeginLatex
-     //
-     // Given that it is common to find multiple DICOM series in the same directory,
-     // we must tell the GDCM classes what specific series we want to read. In
-     // this example we do this by checking first if the user has provided a series
-     // identifier in the command line arguments. If no series identifier has been
-     // passed, then we simply use the first series found during the exploration of
-     // the directory.
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginCodeSnippet
-     
-     // Software Guide : EndCodeSnippet
-     
-     
-     
-     // Software Guide : BeginLatex
-     //
-     // We pass the series identifier to the name generator and ask for all the
-     // filenames associated to that series. This list is returned in a container of
-     // strings by the \code{GetFileNames()} method.
-     //
-     // \index{itk::GDCMSeriesFileNames!GetFileNames()}
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginCodeSnippet
+// Software Guide : BeginLatex
+//
+// Given that it is common to find multiple DICOM series in the same directory,
+// we must tell the GDCM classes what specific series we want to read. In
+// this example we do this by checking first if the user has provided a series
+// identifier in the command line arguments. If no series identifier has been
+// passed, then we simply use the first series found during the exploration of
+// the directory.
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginCodeSnippet
+
+// Software Guide : EndCodeSnippet
+
+
+
+// Software Guide : BeginLatex
+//
+// We pass the series identifier to the name generator and ask for all the
+// filenames associated to that series. This list is returned in a container of
+// strings by the \code{GetFileNames()} method.
+//
+// \index{itk::GDCMSeriesFileNames!GetFileNames()}
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginCodeSnippet
          typedef std::vector< std::string >   FileNamesContainer;
          FileNamesContainer fileNames;
      
          fileNames = nameGenerator->GetFileNames( seriesIdentifier );
-     // Software Guide : EndCodeSnippet
-     
-     // Software Guide : BeginLatex
-     //
-     //
-     // The list of filenames can now be passed to the \doxygen{ImageSeriesReader}
-     // using the \code{SetFileNames()} method.
-     //
-     //  \index{itk::ImageSeriesReader!SetFileNames()}
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginCodeSnippet
+// Software Guide : EndCodeSnippet
+
+// Software Guide : BeginLatex
+//
+//
+// The list of filenames can now be passed to the \doxygen{ImageSeriesReader}
+// using the \code{SetFileNames()} method.
+//
+//  \index{itk::ImageSeriesReader!SetFileNames()}
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginCodeSnippet
          reader->SetFileNames( fileNames );
-     // Software Guide : EndCodeSnippet
-     
-     // Software Guide : BeginLatex
-     //
-     // Finally we can trigger the reading process by invoking the \code{Update()}
-     // method in the reader. This call as usual is placed inside a \code{try/catch}
-     // block.
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginCodeSnippet
+// Software Guide : EndCodeSnippet
+
+// Software Guide : BeginLatex
+//
+// Finally we can trigger the reading process by invoking the \code{Update()}
+// method in the reader. This call as usual is placed inside a \code{try/catch}
+// block.
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginCodeSnippet
          try
            {
            reader->Update();
            }
          catch (itk::ExceptionObject &ex)
            {
+           std::cout << "unable to read"<< seriesIdentifier << std::endl;
            std::cout << ex << std::endl;
-           return EXIT_FAILURE;
+           ++seriesItr;
+           continue;
+           //return EXIT_FAILURE;
            }
-     // Software Guide : EndCodeSnippet
+// Software Guide : EndCodeSnippet
      
      
      typedef itk::MetaDataDictionary   DictionaryType;
@@ -293,16 +328,16 @@ int main( int argc, char* argv[] )
        std::cerr << " not found in the DICOM header" << std::endl;
        return EXIT_FAILURE;
        }
-     // Software Guide : EndCodeSnippet
+// Software Guide : EndCodeSnippet
 
-     //
-     // Since the entry may or may not be of string type we must again use a
-     // \code{dynamic\_cast} in order to attempt to convert it to a string dictionary
-     // entry. If the conversion is successful, we can then print out its content.
-     //
-     // Software Guide : EndLatex
+//
+// Since the entry may or may not be of string type we must again use a
+// \code{dynamic\_cast} in order to attempt to convert it to a string dictionary
+// entry. If the conversion is successful, we can then print out its content.
+//
+// Software Guide : EndLatex
 
-     // Software Guide : BeginCodeSnippet
+// Software Guide : BeginCodeSnippet
      typedef itk::MetaDataObject< std::string > MetaDataStringType;
      MetaDataStringType::ConstPointer entryvalue =
        dynamic_cast<const MetaDataStringType *>( tagItr->second.GetPointer() );
@@ -311,7 +346,8 @@ int main( int argc, char* argv[] )
      if( entryvalue )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << atoi(tagvalue.c_str()) << ".nhdr";
+       idtime = atoi(tagvalue.c_str());
+       outputfilename << argv[2] << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
 
        }
      else
@@ -428,57 +464,64 @@ int main( int argc, char* argv[] )
        return EXIT_FAILURE;
        }
 
-     // Software Guide : BeginLatex
-     // Software Guide : EndCodeSnippet
-     // Software Guide : BeginLatex
-     //
-     // At this point, we have a volumetric image in memory that we can access by
-     // invoking the \code{GetOutput()} method of the reader.
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginLatex
-     //
-     // We proceed now to save the volumetric image in another file, as specified by
-     // the user in the command line arguments of this program. Thanks to the
-     // ImageIO factory mechanism, only the filename extension is needed to identify
-     // the file format in this case.
-     //
-     // Software Guide : EndLatex
-     
-     // Software Guide : BeginCodeSnippet
+// Software Guide : BeginLatex
+// Software Guide : EndCodeSnippet
+// Software Guide : BeginLatex
+//
+// At this point, we have a volumetric image in memory that we can access by
+// invoking the \code{GetOutput()} method of the reader.
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginLatex
+//
+// We proceed now to save the volumetric image in another file, as specified by
+// the user in the command line arguments of this program. Thanks to the
+// ImageIO factory mechanism, only the filename extension is needed to identify
+// the file format in this case.
+//
+// Software Guide : EndLatex
+
+// Software Guide : BeginCodeSnippet
          typedef itk::ImageFileWriter< ImageType > WriterType;
          WriterType::Pointer writer = WriterType::New();
 
-     // add key value pairs
-     itk::MetaDataDictionary &                       thisDic = reader->GetOutput()->GetMetaDataDictionary();
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.EchoTime"               , ValueEchoTime                 );
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.FlipAngle"              , ValueFlipAngle                );
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.RepetitionTime"         , ValueRepetitionTime           );
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , ValueIdentifyTime             );
-     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
+         // add key value pairs
+         itk::MetaDataDictionary &                       thisDic = reader->GetOutput()->GetMetaDataDictionary();
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.EchoTime"               , ValueEchoTime                 );
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.FlipAngle"              , ValueFlipAngle                );
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.DICOM.RepetitionTime"         , ValueRepetitionTime           );
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , ValueIdentifyTime             );
+         itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
          writer->SetFileName( outputfile );
-     
          writer->SetInput( reader->GetOutput() );
-     // Software Guide : EndCodeSnippet
+         // Software Guide : EndCodeSnippet
      
          std::cout  << "Writing the image as " << std::endl << std::endl;
          std::cout  << outputfile  << std::endl << std::endl;
      
-     
-     // Software Guide : BeginLatex
-     //
-     // The process of writing the image is initiated by invoking the
-     // \code{Update()} method of the writer.
-     //
-     // Software Guide : EndLatex
+// Software Guide : BeginLatex
+//
+// The process of writing the image is initiated by invoking the
+// \code{Update()} method of the writer.
+//
+// Software Guide : EndLatex
      
          try
            {
-     // Software Guide : BeginCodeSnippet
+// Software Guide : BeginCodeSnippet
            writer->Update();
-     // Software Guide : EndCodeSnippet
+
+  // append time instance
+  ImageType::Pointer imagecopy = ImageType::New();
+  DeepCopy<ImageType>(reader->GetOutput() , imagecopy );
+
+  // FIXME - use pointer array to hold all image in memory for write
+  imagepointerarray.push_back( imagecopy  );
+  vectorFilter->SetInput( idtime-1,imagecopy  );
+
+// Software Guide : EndCodeSnippet
            }
          catch (itk::ExceptionObject &ex)
            {
@@ -488,15 +531,25 @@ int main( int argc, char* argv[] )
          ++seriesItr;
          }
      
-       // Software Guide : BeginLatex
-       //
-       // Note that in addition to writing the volumetric image to a file we could
-       // have used it as the input for any 3D processing pipeline. Keep in mind that
-       // DICOM is simply a file format and a network protocol. Once the image data
-       // has been loaded into memory, it behaves as any other volumetric dataset that
-       // you could have loaded from any other file format.
-       //
-       // Software Guide : EndLatex
+    // write 4d data as vector image
+    vectorFilter->Update();
+    VectorImageType::Pointer vectorimage = vectorFilter->GetOutput();
+
+    typedef itk::ImageFileWriter< VectorImageType > VectorWriterType;
+    VectorWriterType::Pointer vectorwriter = VectorWriterType::New();
+    vectorwriter->SetFileName( "./vectorimage.nrrd" );
+    vectorwriter->SetInput( vectorFilter->GetOutput() );
+    vectorwriter->Update( );
+
+// Software Guide : BeginLatex
+//
+// Note that in addition to writing the volumetric image to a file we could
+// have used it as the input for any 3D processing pipeline. Keep in mind that
+// DICOM is simply a file format and a network protocol. Once the image data
+// has been loaded into memory, it behaves as any other volumetric dataset that
+// you could have loaded from any other file format.
+//
+// Software Guide : EndLatex
 
       }
     catch (itk::ExceptionObject &ex)
