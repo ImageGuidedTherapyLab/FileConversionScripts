@@ -81,7 +81,7 @@ int main( int argc, char* argv[] )
 
   if( argc < 3 )
     {
-    std::cerr << "Usage: " << std::endl;
+    std::cerr << "Usage: need itk 4.7.2 " << std::endl;
     std::cerr << argv[0] << " DicomDirectory  outputFileName  [stack split tag]"
               << std::endl;
     return EXIT_FAILURE;
