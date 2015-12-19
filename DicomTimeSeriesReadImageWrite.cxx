@@ -51,6 +51,7 @@
 #include "itkMetaDataDictionary.h"
 #include "itkComposeImageFilter.h"
 #include "itkVectorImage.h"
+#include "itkFileTools.h"
 #include <stdlib.h>  // atoi
 // Software Guide : EndCodeSnippet
 
@@ -86,6 +87,9 @@ int main( int argc, char* argv[] )
     return EXIT_FAILURE;
     }
 
+  // output directory
+  //itk::FileTools::CreateDirectory( argv[2] );
+       
 // Software Guide : BeginLatex
 //
 // We define the pixel type and dimension of the image to be read. In this
