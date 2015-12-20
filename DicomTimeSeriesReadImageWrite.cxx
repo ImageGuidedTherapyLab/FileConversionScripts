@@ -535,6 +535,8 @@ int main( int argc, char* argv[] )
     // write 4d data as vector image
     vectorFilter->Update();
     VectorImageType::Pointer vectorimage = vectorFilter->GetOutput();
+    vectorimage->SetSpacing(reader->GetOutput()->GetSpacing()) ;
+    vectorimage->SetOrigin(reader->GetOutput()->GetOrigin()) ;
 
     std::ostringstream TimingArrayValues ;
     TimingArrayValues <<  "0.0" ; 
