@@ -360,7 +360,8 @@ int main( int argc, char* argv[] )
      if( entryvalue )
        {
        std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       idtime = atoi(tagvalue.c_str());
+       //idtime = atoi(tagvalue.c_str());
+       idtime = idtime + 1;
        outputfilename << argv[2] << "/" << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
        }
      else

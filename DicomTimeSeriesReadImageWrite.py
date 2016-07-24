@@ -2,59 +2,6 @@ import sqlite3
 import time
 import dicom
 import os
-#conn = sqlite3.connect('/data/fuentes/DICOM/ctkDICOM.sql')
-# build second database
-os.system('rm ./pydicomtags.sql')
-tagsconn = sqlite3.connect('./pydicomtags.sql')
-
-
-
-SQLcommands = """
-select * from tagcache where  tag like '(0020, 000e)' ;
-select * from tagcache where  tag like '(0020, 0100)' ;
-select * from tagcache where  tag like '(0019, 10a2)' ;
-select * from tagcache where  tag like '(0020, 0013)' ;
-select * from tagcache where  tag like '(0018, 1314)' ;
-
-select  tg1.Value, count(tg2.Value), group_concat(tg2.Value) ,count(tg4.Value ), group_concat(tg4.Value) ,tg5.Value , group_concat(tg6.Value),count(tg7.Value ), tg7.Value , tg8.Value, tg9.Value
-from TagCache tg1
-join TagCache tg2 on tg1.sopinstanceuid=tg2.sopinstanceuid
-left join TagCache tg4 on tg1.sopinstanceuid=tg4.sopinstanceuid
-left join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
-left join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
-left join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
-left join TagCache tg8 on tg1.sopinstanceuid=tg8.sopinstanceuid
-left join TagCache tg9 on tg1.sopinstanceuid=tg9.sopinstanceuid
-where tg1.tag like '(0020, 000e)'
-and   tg2.tag    = '(0020, 0012)' -- TemporalPositionIdentifier
-and   tg4.tag    = '(0020, 0013)' -- instance number
-and   tg5.tag    = '(0018, 1314)' -- flip angle
-and   tg6.tag    = '(0018, 0086)' -- echo number
-and   tg7.tag    = '(0020, 1041)' -- slice location
-and   tg8.tag    = '(0019, 1019)' -- slice origin
-and   tg9.tag    = '(0021, 104f)' -- nslice
-group by tg2.value
-order by cast(tg2.value as numeric);
-
-
-
-
-select  tg1.Value,tg2.Name,  tg2.Value,group_concat(tg4.Value) ,count(tg7.Value ), group_concat( tg7.Value)
-from TagCache tg1
-join TagCache tg2 on tg1.sopinstanceuid=tg2.sopinstanceuid
-join TagCache tg4 on tg1.sopinstanceuid=tg4.sopinstanceuid
-join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
-where tg1.tag like '(0020, 000e)'
-and   tg4.tag    = '(0020, 0013)' -- instance number
-and   tg2.tag    = '(0020, 0012)'
-and   tg7.tag    = '(0020, 1041)' -- slice location
-group by tg2.value
-order by cast(tg2.value as numeric);
-
-"""
-
-
-
 
 # build view for tags
 # verify tag info
@@ -155,41 +102,131 @@ order by cast(tg2.value as numeric);
 # select files 
 ## fileIDList = [ (filename,seriesUID) for (filename,seriesUID) in conn.execute('select im.Filename,se.SeriesInstanceUID from ( (Studies sd join Series se on se.StudyInstanceUID=sd.StudyInstanceUID) join Images im on se.SeriesInstanceUID=im.SeriesInstanceUID ) where sd.StudyDate = "2013-07-17" group by se.SeriesDescription ;')]
 
-tagsconn.execute('create table if not exists TagCache (SOPInstanceUID VARCHAR NOT NULL , Tag varchar not null ,Name varchar, Value varchar, PRIMARY KEY (SOPInstanceUID,Tag) )' )
-datadir = './testdce'
-fileIDList = os.listdir( datadir )
 
-# build database
-errlogfileHandle = file('err.txt'  ,'w')
-for filename in fileIDList:
-  print 'Processing %s' % filename
-  dcm=dicom.read_file('%s/%s' % (datadir,filename));
-  sopUID = dcm.SOPInstanceUID
-  # loop over all keys
-  for dcmkey in dcm.keys() :
-      try: 
+identifysortSiemens ="""
+select  tg1.Value as SeriesUID, tg3.Value as SeriesRestriction,group_concat(distinct tg4.Value) as AcquisitionTime,tg5.Value as FlipAngle, group_concat(distinct tg6.Value) as EchoNumber,count(tg7.Value ) as NumSlice, tg7.Value as SliceLocation 
+from TagCache tg1
+join TagCache tg3 on tg1.sopinstanceuid=tg3.sopinstanceuid
+join TagCache tg4 on tg1.sopinstanceuid=tg4.sopinstanceuid
+join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
+join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
+join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg3.tag    = '(0020, 0012)' -- acquisition number
+and   tg4.tag    = '(0008, 0032)' -- acquisition time
+and   tg5.tag    = '(0018, 1314)' -- flip angle
+and   tg6.tag    = '(0018, 0086)' -- echo number
+and   tg7.tag    = '(0020, 1041)' -- slice location
+group by tg3.value
+order by cast(tg3.value as numeric);
+"""
+identifysortGE ="""
+select  tg1.Value as SeriesUID, tg3.Value as SeriesRestriction,tg5.Value as FlipAngle, group_concat(distinct tg6.Value) as EchoNumber,count(tg7.Value ) as NumSlice, tg7.Value as SliceLocation 
+from TagCache tg1
+join TagCache tg3 on tg1.sopinstanceuid=tg3.sopinstanceuid
+join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
+join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
+join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg3.tag    = '(0018, 1060)' -- trigger time
+and   tg5.tag    = '(0018, 1314)' -- flip angle
+and   tg6.tag    = '(0018, 0086)' -- echo number
+and   tg7.tag    = '(0020, 1041)' -- slice location
+group by tg3.value
+order by cast(tg3.value as numeric);
+"""
+
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option( "--input_dir",
+                  action="store", dest="input_dir", default=None,
+                  help="input directory", metavar = "DIR")
+parser.add_option( "--output",
+                  action="store", dest="output", default=None,
+                  help="output prefix ", metavar = "FILE")
+
+(options, args) = parser.parse_args()
+####################################################
+if (options.input_dir != None and options.output != None):
+  #os.system('rm ./pydicomtags.sql')
+  #tagsconn = sqlite3.connect('./pydicomtags.sql')
+  tagsdb = sqlite3.connect(':memory:')
+  sqlcur = tagsdb.cursor()
+  sqlcur.execute('create table if not exists TagCache (SOPInstanceUID VARCHAR NOT NULL , Tag varchar not null ,Name varchar, Value varchar, PRIMARY KEY (SOPInstanceUID,Tag) )' )
+
+  # get all files
+  fileIDList = [f for f in os.listdir(options.input_dir) if os.path.isfile(os.path.join(options.input_dir, f))]
+  
+  # build database
+  #errlogfileHandle = file('err.txt'  ,'w')
+  print 'Processing ' 
+  for filename in fileIDList:
+  #for filename in fileIDList[:1]:
+    print  filename,
+    dcm=dicom.read_file( '%s/%s' % (options.input_dir,filename) );
+    # loop over all keys
+    for dcmkey in dcm.keys() :
+        try: 
+          # catch key exceptions
+          sopUID=dcm.SOPInstanceUID
+          name=dcm[dcmkey].name;
+          value=dcm[dcmkey].value;
+          tableentry=(unicode(str(sopUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
+          # insert and ignore duplicate entries
+        ## except sqlite3.IntegrityError as inst:
+        ## except UnicodeDecodeError as inst:
+        ## except ValueError as inst:
         # catch key exceptions
-        name=dcm[dcmkey].name;
-        value=dcm[dcmkey].value;
-        tableentry=(unicode(str(sopUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
-        # insert and ignore duplicate entries
-      ## except sqlite3.IntegrityError as inst:
-      ## except UnicodeDecodeError as inst:
-      ## except ValueError as inst:
-      # catch key exceptions
-      except Exception as inst:
-        name='NameException'
-        value='ValueException'
-        tableentry=(unicode(str(sopUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
-        errlogfileHandle.write("%s," % inst )
-        errlogfileHandle.write('%s,%s\n' %  ( unicode(str(sopUID)),unicode(str(dcmkey)) ) )
-      finally:
-        # this is always executed
-        tagsconn.execute('insert or ignore into TagCache (SOPInstanceUID,Tag,Name,Value) values (?,?,?,?);' , tableentry)
-        errlogfileHandle.flush()
-  tagsconn.commit()
+        except Exception as inst:
+          name='NameException'
+          value='ValueException'
+          tableentry=(unicode(str(sopUID)),unicode(str(dcmkey)),unicode(str(name)),unicode(str(value)))
+          #errlogfileHandle.write("%s," % inst )
+          #errlogfileHandle.write('%s,%s\n' %  ( unicode(str(sopUID)),unicode(str(dcmkey)) ) )
+        finally:
+          # this is always executed
+          sqlcur.execute('insert or ignore into TagCache (SOPInstanceUID,Tag,Name,Value) values (?,?,?,?);' , tableentry)
+          #errlogfileHandle.flush()
+    tagsdb.commit()
+  
+  if 'siemens' in dcm.Manufacturer.lower() :
+    SeriesRestriction = "0020|0012" # acquisition number
+    sqlcur.execute( identifysortSiemens  )
+  elif 'ge' in dcm.Manufacturer.lower() :
+    SeriesRestriction = "0018|1060" # trigger time
+    sqlcur.execute( identifysortGE       )
 
-errlogfileHandle.close()
+  print '\n ' 
+  # print info
+  #sqlcur.execute( "select * from TagCache")
+  queryNames= [description[0] for description in sqlcur.description]
+  queryList = [dict(zip(queryNames,x)) for x in sqlcur]
+  print queryNames #, queryDict
+  for datadict in queryList:
+     print datadict 
+
+  print 'save db' 
+  # store view and write to disk
+  sqlcur.execute( "create view identifysortSiemens as" + identifysortSiemens )
+  sqlcur.execute( "create view identifysortGE      as" + identifysortGE      )
+  with open('%s.sql' % options.output, 'w') as fff:
+      for line in tagsdb.iterdump():
+          fff.write('%s\n' % line)
+
+  print dcm.Manufacturer, dcm.ManufacturersModelName
+  dicomcmd = "/rsrch1/ip/dtfuentes/github/PatientSpecificPlanningLITT/Code/IO/DicomTimeSeriesReadImageWrite %s %s '%s'" % (options.input_dir, options.output, SeriesRestriction )
+  print dicomcmd 
+  os.system(dicomcmd)
+  #errlogfileHandle.close()
+
+  # check for errors
+  sqlitecmd = "sqlite3 -init  %s.sql" % ( options.output)
+  print sqlitecmd 
+#############################################################
+#############################################################
+else:
+  parser.print_help()
+  print options
 
 
 

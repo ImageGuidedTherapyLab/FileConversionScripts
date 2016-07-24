@@ -75,3 +75,115 @@ class MultiVolumeImporterPluginClass(DICOMPlugin):
     self.multiVolumeTags['Standard.B-value'] = "sec/mm2"
     self.epsilon = epsilon
 
+and   tg3.tag    = '(0019, 10a2)' -- data number
+and   tg3.tag    = '(0008, 0013)' -- Instance Creation Time = 090354.717000
+and   tg3.tag    = '(0008, 0030)' -- Study Time = 093146.649000
+and   tg3.tag    = '(0008, 0031)' -- Series Time = 090034.610000
+and   tg3.tag    = '(0008, 0032)' -- Acquisition Time = 090342.162500
+and   tg3.tag    = '(0008, 0033)' -- Content Time = 090354.717000
+and   tg3.tag    = '(0018, 0080)' -- Repetition Time = 4.72
+and   tg3.tag    = '(0018, 0081)' -- Echo Time = 1.38
+and   tg3.tag    = '(0040, 0245)' -- Performed Procedure Step Start Time = 083027.368000
+and   tg3.tag    = '(0008, 0050)' -- Accession Number = 12936139
+and   tg3.tag    = '(0018, 0083)' -- Number of Averages = 1
+and   tg3.tag    = '(0018, 0086)' -- Echo Number(s) = 1
+and   tg3.tag    = '(0018, 0089)' -- Number of Phase Encoding Steps = 205
+and   tg3.tag    = '(0018, 1000)' -- Device Serial Number = 30165
+and   tg3.tag    = '(0020, 0011)' -- Series Number = 50
+and   tg3.tag    = '(0020, 0013)' -- Instance Number = 572
+
+SQL commands
+============
+select * from tagcache where  tag like '(0020, 000e)' ;
+select * from tagcache where  tag like '(0020, 0100)' ;
+select * from tagcache where  tag like '(0019, 10a2)' ;
+select * from tagcache where  tag like '(0020, 0013)' ;
+select * from tagcache where  tag like '(0018, 1314)' ;
+
+select  tg1.Value, tg3.Value,count(tg2.Value), group_concat(tg2.Value) ,count(tg4.Value ), group_concat(tg4.Value) ,tg5.Value , group_concat(tg6.Value),count(tg7.Value ), tg7.Value , tg8.Value
+from TagCache tg1
+join TagCache tg2 on tg1.sopinstanceuid=tg2.sopinstanceuid
+join TagCache tg3 on tg1.sopinstanceuid=tg3.sopinstanceuid
+join TagCache tg4 on tg1.sopinstanceuid=tg4.sopinstanceuid
+join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
+join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
+join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
+join TagCache tg8 on tg1.sopinstanceuid=tg8.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg1.value='1.2.840.113619.2.312.6945.201728.15933.1380021874.806'
+and   tg2.tag    = '(0020, 0100)' -- TemporalPositionIdentifier
+and   tg3.tag    = '(0020, 0012)' -- Acquisition Number = 29
+and   tg4.tag    = '(0020, 0013)' -- instance number
+and   tg5.tag    = '(0018, 1314)' -- flip angle
+and   tg6.tag    = '(0018, 0086)' -- echo number
+and   tg7.tag    = '(0020, 1041)' -- slice location
+and   tg8.tag    = '(0019, 1019)' -- slice origin
+group by tg3.value
+order by cast(tg3.value as numeric);
+
+
+select  tg1.Value, tg3.Value  ,tg5.Value , group_concat(tg6.Value),count(tg7.Value ), tg7.Value 
+from TagCache tg1
+join TagCache tg3 on tg1.sopinstanceuid=tg3.sopinstanceuid
+join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
+join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
+join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg1.value='1.3.12.2.1107.5.2.31.30165.2015022609001391136127426.0.0.0'
+and   tg3.tag    = '(0018, 1060)' -- triger time
+and   tg3.tag    = '(0019, 10a2)' -- data number
+and   tg5.tag    = '(0018, 1314)' -- flip angle
+and   tg6.tag    = '(0018, 0086)' -- echo number
+and   tg7.tag    = '(0020, 1041)' -- slice location
+group by tg3.value
+order by cast(tg3.value as numeric);
+
+and   tg3.tag    = '(0020, 0012)' -- Acquisition Number = 29
+
+select  tg1.Value, tg3.Value  ,tg5.Value , group_concat(tg6.Value),count(tg7.Value ), tg7.Value 
+from TagCache tg1
+join TagCache tg3 on tg1.sopinstanceuid=tg3.sopinstanceuid
+join TagCache tg5 on tg1.sopinstanceuid=tg5.sopinstanceuid
+join TagCache tg6 on tg1.sopinstanceuid=tg6.sopinstanceuid
+join TagCache tg7 on tg1.sopinstanceuid=tg7.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg1.value='1.2.840.113619.2.312.6945.201728.15933.1380021874.806'
+and   tg3.tag    = '(0018, 1060)' -- triger time
+and   tg5.tag    = '(0018, 1314)' -- flip angle
+and   tg6.tag    = '(0018, 0086)' -- echo number
+and   tg7.tag    = '(0020, 1041)' -- slice location
+group by tg3.value
+order by cast(tg3.value as numeric);
+
+and   tg3.tag    = '(0020, 0012)' -- Acquisition Number = 29
+and   tg3.tag    = '(0019, 10a2)' -- data number
+
+and   tg3.tag    = '(0008, 0032)'
+and   tg3.tag    = '(0008, 0031)'
+
+and   tg3.tag    = '(0008, 0013)' -- Instance Creation Time = 090354.717000
+and   tg3.tag    = '(0008, 0030)' -- Study Time = 093146.649000
+and   tg3.tag    = '(0008, 0031)' -- Series Time = 090034.610000
+and   tg3.tag    = '(0008, 0032)' -- Acquisition Time = 090342.162500
+and   tg3.tag    = '(0008, 0033)' -- Content Time = 090354.717000
+and   tg3.tag    = '(0018, 0080)' -- Repetition Time = 4.72
+and   tg3.tag    = '(0018, 0081)' -- Echo Time = 1.38
+and   tg3.tag    = '(0040, 0245)' -- Performed Procedure Step Start Time = 083027.368000
+and   tg3.tag    = '(0008, 0050)' -- Accession Number = 12936139
+and   tg3.tag    = '(0018, 0083)' -- Number of Averages = 1
+and   tg3.tag    = '(0018, 0086)' -- Echo Number(s) = 1
+and   tg3.tag    = '(0018, 0089)' -- Number of Phase Encoding Steps = 205
+and   tg3.tag    = '(0018, 1000)' -- Device Serial Number = 30165
+and   tg3.tag    = '(0020, 0011)' -- Series Number = 50
+and   tg3.tag    = '(0020, 0013)' -- Instance Number = 572
+
+
+select  tg1.Value,tg2.Name,  tg2.Value
+from TagCache tg1
+join TagCache tg2 on tg1.sopinstanceuid=tg2.sopinstanceuid
+where tg1.tag like '(0020, 000E)'
+and   tg1.value='1.2.840.113619.2.353.4120.7587709.18419.1427112903.726'
+and   tg2.name like '%slice%';
+
+
+
