@@ -160,8 +160,8 @@ if (options.input_dir != None and options.output != None):
   # build database
   #errlogfileHandle = file('err.txt'  ,'w')
   print 'Processing ' 
-  for filename in fileIDList:
-  #for filename in fileIDList[:1]:
+  #for filename in fileIDList:
+  for filename in fileIDList[:1]:
     print  filename,
     dcm=dicom.read_file( '%s/%s' % (options.input_dir,filename) );
     # loop over all keys
