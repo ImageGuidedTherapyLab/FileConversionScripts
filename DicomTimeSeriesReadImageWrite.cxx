@@ -379,6 +379,8 @@ int main( int argc, char* argv[] )
      std::string TagEchoTime         = "0018|0081";
      std::string TagFlipAngle        = "0018|1314";
 
+     // conversion factor to ms
+     float TimeFactor = 1.0;
 
      // get dictionary data
      DictionaryType::ConstIterator tagItrTriggerTime      = dictionary.Find( TagTriggerTime     );
@@ -393,6 +395,7 @@ int main( int argc, char* argv[] )
        {
        FrameIdentifyingDICOMTagName = "AcquisitionTime";
        entryvalue = dynamic_cast<const MetaDataStringType *>( tagItrAcquisitionTime->second.GetPointer() );
+       TimeFactor  = 1000.0;
        }
      else if( tagItrSeriesTime       != dictend )
        {
@@ -521,7 +524,7 @@ int main( int argc, char* argv[] )
            // FIXME - use pointer array to hold all image in memory for write
            imagepointerarray.push_back( imagecopy  );
            vectorFilter->SetInput( idtime-1,imagecopy  );
-           TimingArray[idtime-1] =  1000. * atof( ValueIdentifyTime.c_str() ); // ms
+           TimingArray[idtime-1] =  TimeFactor * atof( ValueIdentifyTime.c_str() ); // ms
 
 // Software Guide : EndCodeSnippet
            }
