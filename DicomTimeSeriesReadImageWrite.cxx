@@ -73,8 +73,21 @@ void DeepCopy(typename TImage::Pointer input, typename TImage::Pointer output)
     ++outputIterator;
     }
 }
- 
 
+// FIXME - global image type
+typedef signed short    PixelType;
+const unsigned int      Dimension = 3;
+typedef itk::Image< PixelType, Dimension >         ImageType;
+
+struct SortTimeSeries
+{
+    // Left out making a constructor for simplicity's sake.
+    ImageType::Pointer imagecopy;
+    float time ;
+};
+
+// Sort Container by time function
+bool sortByTime(const SortTimeSeries &lhs, const SortTimeSeries &rhs) { return lhs.time < rhs.time; }
 
 int main( int argc, char* argv[] )
 {
@@ -103,10 +116,6 @@ int main( int argc, char* argv[] )
 // Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
-  typedef signed short    PixelType;
-  const unsigned int      Dimension = 3;
-
-  typedef itk::Image< PixelType, Dimension >         ImageType;
 
   // compose 4d series as vector image
   typedef itk::ComposeImageFilter< ImageType >      VectorImageFilterType;
@@ -210,8 +219,9 @@ int main( int argc, char* argv[] )
   nameGenerator->SetDirectory( argv[1] );
 // Software Guide : EndCodeSnippet
 
-  // deep copy image pointers
-  std::vector<ImageType::Pointer> imagepointerarray;
+  // deep copy image pointers and timing for sorting
+  typedef std::vector< SortTimeSeries >    TimeSeriesContainer;
+  TimeSeriesContainer imagepointerarray;
 
   // header info
   std::string ValueEchoTime         ;
@@ -220,8 +230,6 @@ int main( int argc, char* argv[] )
   std::string FrameIdentifyingDICOMTagName;
   std::string FrameIdentifyingDICOMTagUnits = "ms";
   std::string ValueIdentifyTime ;
-  std::map<int,float > TimingArray;
-
 
   try
     {
@@ -245,11 +253,11 @@ int main( int argc, char* argv[] )
 // Software Guide : BeginCodeSnippet
     typedef std::vector< std::string >    SeriesIdContainer;
 
-    const SeriesIdContainer & seriesUID = nameGenerator->GetSeriesUIDs();
+    const SeriesIdContainer & seriesUID    = nameGenerator->GetSeriesUIDs();
+    const gdcm::SerieHelper *seriesHelper = nameGenerator->GetSeriesHelper();
 
     SeriesIdContainer::const_iterator seriesItr = seriesUID.begin();
     SeriesIdContainer::const_iterator seriesEnd = seriesUID.end();
-    int idtime = 0 ;
     while( seriesItr != seriesEnd  )
       {
       std::string seriesIdentifier = seriesItr->c_str();
@@ -356,21 +364,6 @@ int main( int argc, char* argv[] )
      MetaDataStringType::ConstPointer entryvalue =
        dynamic_cast<const MetaDataStringType *>( tagItr->second.GetPointer() );
 
-     std::ostringstream outputfilename ;
-     if( entryvalue )
-       {
-       std::string tagvalue = entryvalue->GetMetaDataObjectValue();
-       //idtime = atoi(tagvalue.c_str());
-       idtime = idtime + 1;
-       outputfilename << argv[2] << "/" << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
-       }
-     else
-       {
-       std::cerr << "Entry was not of string type" << std::endl;
-       return EXIT_FAILURE;
-       }
-     std::string outputfile= outputfilename.str();
-     
      // find additional meta data
      std::string TagTriggerTime      = "0018|1060";
      std::string TagAcquisitionTime  = "0008|0032";
@@ -494,15 +487,6 @@ int main( int argc, char* argv[] )
 // Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
-         typedef itk::ImageFileWriter< ImageType > WriterType;
-         WriterType::Pointer writer = WriterType::New();
-
-         writer->SetFileName( outputfile );
-         writer->SetInput( reader->GetOutput() );
-         // Software Guide : EndCodeSnippet
-     
-         std::cout  << "Writing the image as " << std::endl << std::endl;
-         std::cout  << outputfile  << std::endl << std::endl;
      
 // Software Guide : BeginLatex
 //
@@ -514,17 +498,18 @@ int main( int argc, char* argv[] )
          try
            {
 // Software Guide : BeginCodeSnippet
-           //writer->Update();
            reader->Update();
 
-           // append time instance
-           ImageType::Pointer imagecopy = ImageType::New();
-           DeepCopy<ImageType>(reader->GetOutput() , imagecopy );
-         
-           // FIXME - use pointer array to hold all image in memory for write
-           imagepointerarray.push_back( imagecopy  );
-           vectorFilter->SetInput( idtime-1,imagecopy  );
-           TimingArray[idtime-1] =  TimeFactor * atof( ValueIdentifyTime.c_str() ); // ms
+           // struct to hold single time point
+           SortTimeSeries singletimepoint ;
+
+           // copy time instance
+           singletimepoint.imagecopy = ImageType::New();
+           DeepCopy<ImageType>(reader->GetOutput() , singletimepoint.imagecopy );
+           singletimepoint.time  =  TimeFactor * atof( ValueIdentifyTime.c_str() ); // ms
+
+           // use pointer array to hold all image in memory for sorting
+           imagepointerarray.push_back( singletimepoint );
 
 // Software Guide : EndCodeSnippet
            }
@@ -536,16 +521,50 @@ int main( int argc, char* argv[] )
          ++seriesItr;
          }
      
+
+    // sort
+    std::sort(imagepointerarray.begin(), imagepointerarray.end(), sortByTime);
+
+    // store all time history
+    std::ostringstream TimingArrayValues ;
+
+    // copy to vector series writer
+    TimeSeriesContainer::const_iterator timeItr = imagepointerarray.begin();
+    TimeSeriesContainer::const_iterator timeEnd = imagepointerarray.end();
+    int idtime = 0 ;
+    while( timeItr != timeEnd )
+      {
+        // copy values
+        idtime = idtime + 1;
+        vectorFilter->SetInput( idtime-1,timeItr->imagecopy  );
+        if(timeItr != imagepointerarray.begin()) TimingArrayValues << "," ;
+        TimingArrayValues <<  timeItr->time - imagepointerarray[0].time; 
+
+        // write single time instance
+        std::ostringstream outputfilename ;
+        outputfilename << argv[2] << "/" << std::setfill('0') << std::setw(5) << idtime  << ".nhdr";
+        std::string outputfile= outputfilename.str();
+
+        typedef itk::ImageFileWriter< ImageType > WriterType;
+        WriterType::Pointer writer = WriterType::New();
+
+        writer->SetFileName( outputfile );
+        writer->SetInput( reader->GetOutput() );
+        // Software Guide : EndCodeSnippet
+     
+        std::cout  << "Writing the image as " << std::endl << std::endl;
+        std::cout  << outputfile  << std::endl << std::endl;
+        //writer->Update();
+
+        // update iterator
+        timeItr++;
+      }
+
     // write 4d data as vector image
     vectorFilter->Update();
     VectorImageType::Pointer vectorimage = vectorFilter->GetOutput();
     vectorimage->SetSpacing(reader->GetOutput()->GetSpacing()) ;
     vectorimage->SetOrigin(reader->GetOutput()->GetOrigin()) ;
-
-    std::ostringstream TimingArrayValues ;
-    TimingArrayValues <<  "0.0" ; 
-    for ( int iii =1 ; iii< TimingArray.size() ; iii++)
-       TimingArrayValues << "," << TimingArray[iii] - TimingArray[0] ; 
 
 
     // add key value pairs
