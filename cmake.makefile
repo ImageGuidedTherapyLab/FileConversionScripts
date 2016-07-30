@@ -8,6 +8,6 @@ Makefile:
 clean:
 	rm -rf CMakeCache.txt Makefile CMakeFiles/ ITKIOFactoryRegistration/ cmake_install.cmake  
 tags:
-	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_SOURCE) .
+	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_HOME) $(ITK_SOURCE) .
 
 .PHONY: tags

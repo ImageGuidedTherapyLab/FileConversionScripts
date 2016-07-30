@@ -48,6 +48,7 @@
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
+#include "itkNrrdImageIO.h"
 #include "itkMetaDataDictionary.h"
 #include "itkComposeImageFilter.h"
 #include "itkVectorImage.h"
@@ -575,6 +576,18 @@ int main( int argc, char* argv[] )
     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagName" , FrameIdentifyingDICOMTagName  );
     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameLabels"                  , TimingArrayValues.str()       );
     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
+    // need label ?
+    itk::EncapsulateMetaData< std::string >( thisDic, "LabelMap", "0" );
+    // need NRRD0005
+    std::vector< std::vector< double > > measurementFrame;
+    measurementFrame.resize(Dimension);
+    measurementFrame[0].resize(Dimension);
+    measurementFrame[1].resize(Dimension);
+    measurementFrame[2].resize(Dimension);
+    measurementFrame[0][0] = 1.0; measurementFrame[0][1] = 0.0; measurementFrame[0][2] = 0.0;
+    measurementFrame[1][0] = 0.0; measurementFrame[1][1] = 1.0; measurementFrame[1][2] = 0.0;
+    measurementFrame[2][0] = 0.0; measurementFrame[2][1] = 0.0; measurementFrame[2][2] = 1.0;
+    itk::EncapsulateMetaData< std::vector< std::vector< double > > >( thisDic, "NRRD_measurement frame", measurementFrame);
 
 
     typedef itk::ImageFileWriter< VectorImageType > VectorWriterType;
@@ -583,7 +596,11 @@ int main( int argc, char* argv[] )
     output4dfilename << argv[2] << ".nrrd";
     vectorwriter->SetFileName( output4dfilename.str()  );
     vectorwriter->SetInput( vectorFilter->GetOutput() );
+    // NrrdImageIO
+    //itk::ImageIOBase *nrrdio  = vectorwriter->GetImageIO();
     vectorwriter->Update( );
+    itk::MetaDataDictionary &nrrdmeta = vectorwriter->GetImageIO()->GetMetaDataDictionary();
+    nrrdmeta.Print(std::cout);
 
 // Software Guide : BeginLatex
 //
