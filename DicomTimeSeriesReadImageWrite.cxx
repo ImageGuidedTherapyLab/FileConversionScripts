@@ -578,6 +578,10 @@ int main( int argc, char* argv[] )
     itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.FrameIdentifyingDICOMTagUnits", FrameIdentifyingDICOMTagUnits );
     // need label ?
     itk::EncapsulateMetaData< std::string >( thisDic, "LabelMap", "0" );
+    std::ostringstream NumberOfFrames;
+    NumberOfFrames << idtime;
+    itk::EncapsulateMetaData< std::string >( thisDic, "MultiVolume.NumberOfFrames", NumberOfFrames.str() );
+
     // need NRRD0005
     std::vector< std::vector< double > > measurementFrame;
     measurementFrame.resize(Dimension);
