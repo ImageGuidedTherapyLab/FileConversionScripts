@@ -140,9 +140,6 @@ int main( int argc, char* argv[] )
   nameGenerator->SetDirectory( argv[1] );
   // Software Guide : EndCodeSnippet
 
-  // mkdir directory if not exist
-  itksys::SystemTools::MakeDirectory( argv[2] );
-
   try
     {
     std::cout << std::endl << "The directory: " << std::endl;
@@ -332,9 +329,14 @@ int main( int argc, char* argv[] )
       typedef itk::ImageFileWriter< ImageType > WriterType;
       WriterType::Pointer writer = WriterType::New();
       
+      // mkdir directory if not exist
+      std::ostringstream outputdirectory ;
+      outputdirectory << argv[2] << "/" << SeriesUIDvalue;
+      itksys::SystemTools::MakeDirectory( outputdirectory.str()  );
+
       std::ostringstream outputfilename ;
       // outputfilename << argv[2] << "/" << seriesIdentifier  << ".nii.gz";
-      outputfilename << argv[2] << "/" << SeriesUIDvalue << "." 
+      outputfilename << argv[2] << "/" << SeriesUIDvalue << "/" 
                                        << StackBreakvalue<< ".nii.gz"; 
       std::string outputfile= outputfilename.str();
       writer->SetFileName( outputfile );
