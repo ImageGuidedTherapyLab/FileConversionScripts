@@ -48,6 +48,8 @@
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
+#include <itksys/SystemTools.hxx>
+#include <algorithm>
 // Software Guide : EndCodeSnippet
 
 int main( int argc, char* argv[] )
@@ -56,7 +58,7 @@ int main( int argc, char* argv[] )
   if( argc < 3 )
     {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " DicomDirectory  outputFileName  [seriesName]"
+    std::cerr << argv[0] << " DicomDirectory  outputFileDir  [dicom tag for stack break, dflt=0008|0021]"
               << std::endl;
     return EXIT_FAILURE;
     }
@@ -78,32 +80,6 @@ int main( int argc, char* argv[] )
   const unsigned int      Dimension = 3;
 
   typedef itk::Image< PixelType, Dimension >         ImageType;
-// Software Guide : EndCodeSnippet
-
-// Software Guide : BeginLatex
-//
-// We use the image type for instantiating the type of the series reader and
-// for constructing one object of its type.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-  typedef itk::ImageSeriesReader< ImageType >        ReaderType;
-  ReaderType::Pointer reader = ReaderType::New();
-// Software Guide : EndCodeSnippet
-
-// Software Guide : BeginLatex
-//
-// A GDCMImageIO object is created and connected to the reader. This object is
-// the one that is aware of the internal intricacies of the DICOM format.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-  typedef itk::GDCMImageIO       ImageIOType;
-  ImageIOType::Pointer dicomIO = ImageIOType::New();
-
-  reader->SetImageIO( dicomIO );
 // Software Guide : EndCodeSnippet
 
 // Software Guide : BeginLatex
@@ -152,11 +128,20 @@ int main( int argc, char* argv[] )
   NamesGeneratorType::Pointer nameGenerator = NamesGeneratorType::New();
 
   nameGenerator->SetUseSeriesDetails( true );
-  nameGenerator->AddSeriesRestriction("0008|0021" );
+
+  // TagStackBreak
+  std::string TagStackBreak = "0008|0021"; // dflt stack break on series date
+  if( argc > 3 )
+    {
+     TagStackBreak  = argv[3];
+    }
+  nameGenerator->AddSeriesRestriction(TagStackBreak ); // try new stack break
 
   nameGenerator->SetDirectory( argv[1] );
-// Software Guide : EndCodeSnippet
+  // Software Guide : EndCodeSnippet
 
+  // mkdir directory if not exist
+  itksys::SystemTools::MakeDirectory( argv[2] );
 
   try
     {
@@ -189,137 +174,197 @@ int main( int argc, char* argv[] )
       std::cout << seriesItr->c_str() << std::endl;
       ++seriesItr;
       }
-// Software Guide : EndCodeSnippet
 
-
-// Software Guide : BeginLatex
-//
-// Given that it is common to find multiple DICOM series in the same directory,
-// we must tell the GDCM classes what specific series we want to read. In
-// this example we do this by checking first if the user has provided a series
-// identifier in the command line arguments. If no series identifier has been
-// passed, then we simply use the first series found during the exploration of
-// the directory.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-    std::string seriesIdentifier;
-
-    if( argc > 3 ) // If no optional series identifier
+    // loop over all series and write each
+    seriesItr = seriesUID.begin();
+    while( seriesItr != seriesEnd )
       {
-      seriesIdentifier = argv[3];
-      }
-    else
-      {
-      seriesIdentifier = seriesUID.begin()->c_str();
-      }
-// Software Guide : EndCodeSnippet
+      
+       // Software Guide : BeginLatex
+       //
+       // We use the image type for instantiating the type of the series reader and
+       // for constructing one object of its type.
+       //
+       // Software Guide : EndLatex
+       
+       // Software Guide : BeginCodeSnippet
+       typedef itk::ImageSeriesReader< ImageType >        ReaderType;
+       ReaderType::Pointer reader = ReaderType::New();
+       // Software Guide : EndCodeSnippet
+
+       // Software Guide : BeginLatex
+       //
+       // A GDCMImageIO object is created and connected to the reader. This object is
+       // the one that is aware of the internal intricacies of the DICOM format.
+       //
+       // Software Guide : EndLatex
+
+       // Software Guide : BeginCodeSnippet
+       typedef itk::GDCMImageIO       ImageIOType;
+       ImageIOType::Pointer dicomIO = ImageIOType::New();
+
+       reader->SetImageIO( dicomIO );
+       // Software Guide : EndCodeSnippet
+      
+      // Software Guide : BeginLatex
+      //
+      // Given that it is common to find multiple DICOM series in the same directory,
+      // we must tell the GDCM classes what specific series we want to read. In
+      // this example we do this by checking first if the user has provided a series
+      // identifier in the command line arguments. If no series identifier has been
+      // passed, then we simply use the first series found during the exploration of
+      // the directory.
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginCodeSnippet
+      std::string seriesIdentifier;
+      seriesIdentifier = seriesItr->c_str();
+      // Software Guide : EndCodeSnippet
+      
+      
+      std::cout << std::endl << std::endl;
+      std::cout << "Now reading series: " << std::endl << std::endl;
+      std::cout << seriesIdentifier << std::endl;
+      std::cout << std::endl << std::endl;
+      
+      // Software Guide : BeginLatex
+      //
+      // We pass the series identifier to the name generator and ask for all the
+      // filenames associated to that series. This list is returned in a container of
+      // strings by the \code{GetFileNames()} method.
+      //
+      // \index{itk::GDCMSeriesFileNames!GetFileNames()}
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginCodeSnippet
+      typedef std::vector< std::string >   FileNamesContainer;
+      FileNamesContainer fileNames;
+      
+      fileNames = nameGenerator->GetFileNames( seriesIdentifier );
+      // Software Guide : EndCodeSnippet
+      
+      // Software Guide : BeginLatex
+      //
+      //
+      // The list of filenames can now be passed to the \doxygen{ImageSeriesReader}
+      // using the \code{SetFileNames()} method.
+      //
+      //  \index{itk::ImageSeriesReader!SetFileNames()}
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginCodeSnippet
+      reader->SetFileNames( fileNames );
+      // Software Guide : EndCodeSnippet
+      
+      // Software Guide : BeginLatex
+      //
+      // Finally we can trigger the reading process by invoking the \code{Update()}
+      // method in the reader. This call as usual is placed inside a \code{try/catch}
+      // block.
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginCodeSnippet
+      try
+        {
+        reader->Update();
+        }
+      catch (itk::ExceptionObject &ex)
+        {
+        std::cout << ex << std::endl;
+        ++seriesItr; // update iterator
+        continue;
+        //return EXIT_FAILURE;
+        }
+      // Software Guide : EndCodeSnippet
+      
+      typedef itk::MetaDataDictionary   DictionaryType;
+      const  DictionaryType & dictionary = dicomIO->GetMetaDataDictionary();
+      DictionaryType::ConstIterator dictend = dictionary.End();
+      typedef itk::MetaDataObject< std::string > MetaDataStringType;
+
+      // get series uid
+      std::string TagSeriesUID  = "0020|000e";
+      DictionaryType::ConstIterator tagItrSeriesUID  = dictionary.Find( TagSeriesUID  );
+      std::string SeriesUIDvalue = "Unknown";
+      if( tagItrSeriesUID  != dictend )
+        {
+          MetaDataStringType::ConstPointer SeriesUIDmeta =
+           dynamic_cast<const MetaDataStringType *>( tagItrSeriesUID->second.GetPointer() );
+          SeriesUIDvalue = SeriesUIDmeta->GetMetaDataObjectValue();
+        }
+
+      // get stack break uid
+      DictionaryType::ConstIterator tagItrStackBreak  = dictionary.Find( TagStackBreak );
+      std::string StackBreakvalue = "Unknown";
+      if( tagItrStackBreak != dictend )
+        {
+         MetaDataStringType::ConstPointer StackBreakMeta =
+           dynamic_cast<const MetaDataStringType *>( tagItrStackBreak->second.GetPointer() );
+         StackBreakvalue = StackBreakMeta->GetMetaDataObjectValue();
+         // remove any spaces
+         StackBreakvalue.erase(std::remove(StackBreakvalue.begin(), StackBreakvalue.end(), ' '),
+                    StackBreakvalue.end());
+        }
 
 
-    std::cout << std::endl << std::endl;
-    std::cout << "Now reading series: " << std::endl << std::endl;
-    std::cout << seriesIdentifier << std::endl;
-    std::cout << std::endl << std::endl;
-
-// Software Guide : BeginLatex
-//
-// We pass the series identifier to the name generator and ask for all the
-// filenames associated to that series. This list is returned in a container of
-// strings by the \code{GetFileNames()} method.
-//
-// \index{itk::GDCMSeriesFileNames!GetFileNames()}
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-    typedef std::vector< std::string >   FileNamesContainer;
-    FileNamesContainer fileNames;
-
-    fileNames = nameGenerator->GetFileNames( seriesIdentifier );
-// Software Guide : EndCodeSnippet
-
-// Software Guide : BeginLatex
-//
-//
-// The list of filenames can now be passed to the \doxygen{ImageSeriesReader}
-// using the \code{SetFileNames()} method.
-//
-//  \index{itk::ImageSeriesReader!SetFileNames()}
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-    reader->SetFileNames( fileNames );
-// Software Guide : EndCodeSnippet
-
-// Software Guide : BeginLatex
-//
-// Finally we can trigger the reading process by invoking the \code{Update()}
-// method in the reader. This call as usual is placed inside a \code{try/catch}
-// block.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-    try
-      {
-      reader->Update();
-      }
-    catch (itk::ExceptionObject &ex)
-      {
-      std::cout << ex << std::endl;
-      return EXIT_FAILURE;
-      }
-// Software Guide : EndCodeSnippet
-
-
-// Software Guide : BeginLatex
-//
-// At this point, we have a volumetric image in memory that we can access by
-// invoking the \code{GetOutput()} method of the reader.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginLatex
-//
-// We proceed now to save the volumetric image in another file, as specified by
-// the user in the command line arguments of this program. Thanks to the
-// ImageIO factory mechanism, only the filename extension is needed to identify
-// the file format in this case.
-//
-// Software Guide : EndLatex
-
-// Software Guide : BeginCodeSnippet
-    typedef itk::ImageFileWriter< ImageType > WriterType;
-    WriterType::Pointer writer = WriterType::New();
-
-    writer->SetFileName( argv[2] );
-
-    writer->SetInput( reader->GetOutput() );
-// Software Guide : EndCodeSnippet
-
-    std::cout  << "Writing the image as " << std::endl << std::endl;
-    std::cout  << argv[2] << std::endl << std::endl;
-
-
-// Software Guide : BeginLatex
-//
-// The process of writing the image is initiated by invoking the
-// \code{Update()} method of the writer.
-//
-// Software Guide : EndLatex
-
-    try
-      {
-// Software Guide : BeginCodeSnippet
-      writer->Update();
-// Software Guide : EndCodeSnippet
-      }
-    catch (itk::ExceptionObject &ex)
-      {
-      std::cout << ex << std::endl;
-      return EXIT_FAILURE;
+      
+      // Software Guide : BeginLatex
+      //
+      // At this point, we have a volumetric image in memory that we can access by
+      // invoking the \code{GetOutput()} method of the reader.
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginLatex
+      //
+      // We proceed now to save the volumetric image in another file, as specified by
+      // the user in the command line arguments of this program. Thanks to the
+      // ImageIO factory mechanism, only the filename extension is needed to identify
+      // the file format in this case.
+      //
+      // Software Guide : EndLatex
+      
+      // Software Guide : BeginCodeSnippet
+      typedef itk::ImageFileWriter< ImageType > WriterType;
+      WriterType::Pointer writer = WriterType::New();
+      
+      std::ostringstream outputfilename ;
+      // outputfilename << argv[2] << "/" << seriesIdentifier  << ".nii.gz";
+      outputfilename << argv[2] << "/" << SeriesUIDvalue << "." 
+                                       << StackBreakvalue<< ".nii.gz"; 
+      std::string outputfile= outputfilename.str();
+      writer->SetFileName( outputfile );
+      
+      writer->SetInput( reader->GetOutput() );
+      // Software Guide : EndCodeSnippet
+      
+      std::cout  << "Writing the image as " << std::endl << std::endl;
+      std::cout  << outputfile << std::endl << std::endl;
+      
+      
+      // Software Guide : BeginLatex
+      //
+      // The process of writing the image is initiated by invoking the
+      // \code{Update()} method of the writer.
+      //
+      // Software Guide : EndLatex
+      
+      try
+        {
+      // Software Guide : BeginCodeSnippet
+         writer->Update();
+      // Software Guide : EndCodeSnippet
+        }
+      catch (itk::ExceptionObject &ex)
+        {
+         std::cout << ex << std::endl;
+         return EXIT_FAILURE;
+        }
+      ++seriesItr; // update iterator
       }
     }
   catch (itk::ExceptionObject &ex)
