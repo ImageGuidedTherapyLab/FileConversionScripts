@@ -1,0 +1,14 @@
+
+# ITK Docker
+
+## Build
+
+docker build -t itk:4.13 tag-insighttoolkit4.13
+
+## debug
+
+docker run --entrypoint=/bin/bash --rm -it --user $(id -u):$(id -g) itk:4.13 
+
+## run
+
+docker run  --rm -it --user $(id -u):$(id -g) itk:4.13 
