@@ -1,14 +1,27 @@
-
 # ITK Docker
 
 ## Build
 
 docker build -t itk:4.13 tag-insighttoolkit4.13
 
+## dockerhub
+
+docker login --username=fuentesdt
+
+docker tag 474d8a04c676 itk:4.13
+
+docker push fuentesdt/itk
+
+
 ## debug
 
 docker run --entrypoint=/bin/bash --rm -it --user $(id -u):$(id -g) itk:4.13 
 
-## run
+Usage
+=====
+docker pull fuentesdt/itk:4.13
 
-docker run  --rm -it --user $(id -u):$(id -g) itk:4.13 
+docker run --rm -it --user $(id -u):$(id -g) -v $PWD/dicomdir/:/data/  -v $PWD:/out itk:4.13 /data/ /out/image.nii.gz
+
+
+

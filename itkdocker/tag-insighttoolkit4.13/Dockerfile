@@ -67,6 +67,8 @@ ADD ./CMakeLists.txt /app
 WORKDIR /app
 RUN cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_VERBOSE_MAKEFILE=ON -DITK_DIR=/usr/lib/cmake/ITK-4.13/
 RUN make 
+RUN mkdir /data
+RUN mkdir /out
 
 ENTRYPOINT ["/app/DicomSeriesReadImageWrite2"]
 
