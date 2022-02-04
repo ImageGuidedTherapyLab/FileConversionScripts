@@ -19,9 +19,11 @@ docker run --entrypoint=/bin/bash --rm -it --user $(id -u):$(id -g) itk:4.13
 
 Usage
 =====
-docker pull fuentesdt/itk:4.13
+apt-get install docker
+docker pull fuentesdt/itk:itk4.13
+docker run --rm -it --user $(id -u):$(id -g) -v $PWD/dicomdir/:/data/  -v $PWD:/out fuentesdt/itk:itk4.13 /data/ /out/image.nii.gz
 
-docker run --rm -it --user $(id -u):$(id -g) -v $PWD/dicomdir/:/data/  -v $PWD:/out itk:4.13 /data/ /out/image.nii.gz
+
 
 
 
