@@ -8,9 +8,9 @@ docker build -t itk:4.13 tag-insighttoolkit4.13
 
 docker login --username=fuentesdt
 
-docker tag 474d8a04c676 itk:4.13
+docker tag 474d8a04c676 fuentesdt/itk:itk4.13
 
-docker push fuentesdt/itk
+docker push fuentesdt/itk:itk4.13
 
 
 ## debug
